@@ -1,0 +1,32 @@
+/* media-queries.css */
+@import url('variables.css');
+
+/* Mobile Small (foldables) */
+@custom-media --mobile-small (width < var(--breakpoint-mobile-medium));
+
+/* Mobile Medium */
+@custom-media --mobile-medium (width >= var(--breakpoint-mobile-medium)) and (width < var(--breakpoint-mobile-large));
+
+/* Mobile Large */
+@custom-media --mobile-large (width >= var(--breakpoint-mobile-large)) and (width < var(--breakpoint-tablet));
+
+/* Tablet */
+@custom-media --tablet (width >= var(--breakpoint-tablet)) and (width < var(--breakpoint-laptop));
+
+/* Laptop */
+@custom-media --laptop (width >= var(--breakpoint-laptop)) and (width < var(--breakpoint-desktop));
+
+/* Desktop */
+@custom-media --desktop (width >= var(--breakpoint-desktop)) and (width < var(--breakpoint-desktop-xlarge));
+
+/* Large Desktop */
+@custom-media --desktop-large (width >= var(--breakpoint-desktop-xlarge)) and (width < var(--breakpoint-ultrawide));
+
+/* Ultrawide */
+@custom-media --ultrawide (width >= var(--breakpoint-ultrawide));
+
+/* Usage example:
+@media (--tablet) {
+  .element { ... }
+}
+*/

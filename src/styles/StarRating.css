@@ -1,0 +1,42 @@
+.star-rating {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.star-rating.small {
+    gap: 1px;
+}
+
+.star-rating .star {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+.star-rating.small .star {
+    width: 16px;
+    height: 16px;
+}
+
+.half-star-container {
+    position: relative;
+    width: 20px;
+    height: 20px;
+}
+
+.star-rating.small .half-star-container {
+    width: 16px;
+    height: 16px;
+}
+
+.half-star-container .half-filled {
+    position: absolute;
+    clip-path: inset(0 50% 0 0);
+}
+
+.half-star-container .half-hollow {
+    position: absolute;
+    clip-path: inset(0 0 0 50%);
+    opacity: 0.5;
+}
