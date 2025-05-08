@@ -1,0 +1,162 @@
+.breckenridge-experience {
+    background-color: #F5ECE2;
+    padding: 80px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.section-title {
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+    font-size: 2.5rem;
+    margin-bottom: 60px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+}
+
+.experience-section {
+    display: flex;
+    width: 100%;
+    margin-bottom: 40px;
+}
+
+/* First Section Styles */
+.first-section {
+    height: 400px;
+}
+
+.left-20 {
+    width: 20%;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.right-80 {
+    width: 80%;
+}
+
+/* Second Section Styles */
+.second-section {
+    height: 400px;
+}
+
+.left-40 {
+    width: 80%;
+}
+
+.middle-20 {
+    width: 40%;
+    display: flex;
+    flex-direction: column;
+}
+
+.right-20 {
+    width: 20%;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.section-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.small-image-wrapper {
+    height: 50%;
+    width: 100%;
+    position: relative;
+}
+
+.small-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.experience-subtitle {
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+    line-height: 1.3;
+}
+
+.experience-text {
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+    font-size: 1.2rem;
+    line-height: 1.6;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .experience-section {
+        flex-direction: column;
+        height: auto;
+        margin-bottom: 30px;
+    }
+    
+    .first-section, .second-section {
+        height: auto;
+    }
+    
+    .left-20, .right-80, 
+    .left-40, .middle-20, 
+    .right-20 {
+        width: 100%;
+        padding: 20px;
+    }
+    
+    .middle-20 {
+        flex-direction: row;
+    }
+    
+    .small-image-wrapper {
+        width: 50%;
+        height: 200px;
+    }
+    
+    .section-title {
+        font-size: 2rem;
+        margin-bottom: 40px;
+    }
+    
+    .experience-subtitle {
+        font-size: 1.5rem;
+    }
+    
+    .experience-text {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .section-title {
+        font-size: 1.8rem;
+    }
+    
+    .middle-20 {
+        flex-direction: column;
+    }
+    
+    .small-image-wrapper {
+        width: 100%;
+        height: 150px;
+    }
+    
+    .experience-subtitle {
+        font-size: 1.3rem;
+    }
+    
+    .experience-text {
+        font-size: 1rem;
+    }
+}

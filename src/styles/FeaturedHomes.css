@@ -1,0 +1,172 @@
+.featured-homes {
+    background-color: #F5ECE2;
+    padding: 60px 20px;
+    text-align: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.section-title {
+    font-family: 'Libre Caslon Display', serif;
+    color: #5C3B2E;
+    font-size: 36px;
+    margin-bottom: 30px;
+    font-weight: 400;
+    text-align: center;
+}
+
+.property-type-filter {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 30px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.property-type-filter::-webkit-scrollbar {
+    display: none;
+}
+
+.type-button {
+    background: none;
+    border: none;
+    font-family: 'Nunito', sans-serif;
+    color: #5C3B2E;
+    font-size: 16px;
+    font-weight: 400;
+    cursor: pointer;
+    padding: 8px 16px;
+    transition: all 0.3s ease;
+    position: relative;
+    white-space: nowrap;
+}
+
+.type-button.active {
+    font-weight: 700;
+}
+
+.type-button.active::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #7A3E3E;
+}
+
+.type-button:hover {
+    color: #7A3E3E;
+}
+
+.divider {
+    height: 1px;
+    background-color: #E0B475;
+    margin: 0 auto 40px;
+    max-width: 1200px;
+}
+
+.properties-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin: 0 auto 40px;
+}
+
+.property-card {
+    background-color: #F5ECE2;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.property-card:hover {
+    transform: translateY(-5px);
+}
+
+.property-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.property-content {
+    padding: 20px;
+    background-color: #F5ECE2;
+    text-align: left;
+    border-radius: 10px;
+    border-bottom: #5C3B2E;
+    border-style: solid;
+}
+
+.property-title {
+    font-family: 'Libre Caslon Display', serif;
+    color: #5C3B2E;
+    font-size: 20px;
+    margin-bottom: 8px;
+    font-weight: 400;
+}
+
+.property-details {
+    font-family: 'Nunito', sans-serif;
+    color: #5C3B2E;
+    font-size: 16px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.property-description {
+    font-family: 'Nunito', sans-serif;
+    color: #5C3B2E;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.view-all-button {
+    background-color: #E0B475;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 24px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 20px;
+}
+
+.view-all-button:hover {
+    background-color: #D1A165;
+}
+
+@media (max-width: 1200px) {
+    .properties-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .properties-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .section-title {
+        font-size: 28px;
+    }
+}
+
+@media (max-width: 600px) and (max-height: 800px) {
+    .properties-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .section-title {
+        font-size: 1.8rem;
+    }
+}

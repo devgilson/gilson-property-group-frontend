@@ -1,0 +1,442 @@
+.home-page {
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+}
+
+.navbar {
+    background-color: #F5ECE2;
+    padding: 10px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+.logo img {
+    height: 50px;
+    width: auto;
+}
+
+.nav-list {
+    list-style: none;
+    display: flex;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-list.left {
+    margin-right: auto;
+}
+
+.nav-list.right {
+    margin-left: auto;
+}
+
+.nav-item {
+    margin: 0 20px;
+}
+
+.nav-item a {
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.nav-item a:hover {
+    color: #5C3B2E;
+}
+
+.hero-section {
+    background-color: #F5ECE2;
+    padding: 100px 20px 20px;
+    text-align: center;
+}
+
+.hero-section h1 {
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+    font-size: 3.5rem;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+.hero-section p {
+    font-size: 1.5rem;
+    max-width: 800px;
+    margin: 0 auto 40px;
+    line-height: 1.6;
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+}
+
+.hero-image {
+    width: 100%;
+    max-width: 1200px;
+    height: auto;
+    margin-top: 40px;
+    border-radius: 10px;
+}
+
+.flex-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+    padding: 40px 20px;
+    background-color: #F5ECE2;
+}
+
+.flex-paragraph {
+    font-size: 1.2rem;
+    max-width: 400px;
+    line-height: 1.6;
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+    text-align: center;
+}
+
+.vector {
+    width: 50px;
+    height: auto;
+}
+
+.static-content {
+    padding: 40px 20px;
+    background-color: #F5ECE2;
+}
+
+.static-content .flex-container {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    margin-bottom: 5%;
+}
+
+.static-content .text-content {
+    max-width: 50%;
+}
+
+.static-content h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+}
+
+.static-content p {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+}
+
+.static-content .frame-image {
+    width: 20%;
+    height: auto;
+    border-radius: 10px;
+}
+
+.footer {
+    background-color: #E0B475;
+    padding: 20px 40px;
+    text-align: center;
+    color: #5C3B2E;
+}
+
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.footer-links {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 0;
+    margin: 0 0 10px 0;
+}
+
+.footer-links li a {
+    text-decoration: none;
+    color: #5C3B2E;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.footer-links li a:hover {
+    text-decoration: underline;
+}
+
+.footer-text {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.view-all-button {
+    background-color: #E0B475;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 24px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 20px;
+}
+
+.reviews-section {
+    background-color: #F5ECE2;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.reviews-title {
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+    font-size: 2.5rem;
+    margin-bottom: 40px;
+    font-weight: bold;
+}
+
+.review-cards {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.review-card {
+    background-color: white;
+    border-radius: 10px;
+    padding: 30px;
+    width: 100%;
+    max-width: 350px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: left;
+}
+
+.review-author {
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.review-text {
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+    .review-cards {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .review-card {
+        max-width: 100%;
+    }
+}
+
+.concierge-section {
+    background-color: #F5ECE2;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.section-title {
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+    font-size: 2.5rem;
+    margin-bottom: 40px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.concierge-content-wrapper {
+    display: flex;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 50px;
+}
+
+.concierge-image {
+    flex: 0 0 40%;
+}
+
+.concierge-image img {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+}
+
+.concierge-content {
+    flex: 1;
+    text-align: left;
+}
+
+.concierge-subtitle {
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+    font-size: 1.3rem;
+    margin-bottom: 30px;
+}
+
+.concierge-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.concierge-list li {
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+    font-size: 1.2rem;
+    padding: 10px 0;
+    position: relative;
+    padding-left: 30px;
+}
+
+.concierge-list li:before {
+    content: "•";
+    color: #E0B475;
+    font-size: 1.5rem;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.free-rentalevaluation {
+    background-color: #F5ECE2;
+    padding: 60px 20px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.free-rentalevaluation .section-title {
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+.free-rentalevaluation .concierge-subtitle {
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+    font-size: 1.2rem;
+    max-width: 800px;
+    margin: 0 auto 30px;
+    line-height: 1.6;
+}
+
+.view-all-button {
+    background-color: #E0B475;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 24px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.view-all-button:hover {
+    background-color: #d0a469;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .concierge-content-wrapper {
+        flex-direction: column;
+    }
+    
+    .concierge-image {
+        flex: 0 0 auto;
+        width: 80%;
+        margin-bottom: 30px;
+    }
+    
+    .concierge-content {
+        text-align: center;
+    }
+    
+    .concierge-list {
+        display: inline-block;
+        text-align: left;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .concierge-section {
+        flex-direction: column;
+        gap: 30px;
+    }
+    
+    .concierge-content {
+        text-align: center;
+    }
+    
+    .concierge-list {
+        display: inline-block;
+        text-align: left;
+    }
+}
+
+.image-container {
+    position: relative;
+    width: 100%;
+    max-width: 80%;
+    margin: 0 auto;
+    display: flex;
+    margin-bottom: 10rem;
+}
+
+@media (max-width: 768px) {
+    .concierge-section .section-title {
+        font-size: 2rem;
+    }
+
+    .concierge-subtitle {
+        font-size: 1.1rem;
+    }
+
+    .concierge-list li {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 600px) and (max-height: 800px) {
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+
+    .hero-section p {
+        font-size: 1rem;
+    }
+
+    .review-cards {
+        flex-direction: column;
+    }
+}

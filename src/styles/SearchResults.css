@@ -1,0 +1,25 @@
+@import url('variables.css');
+@import url('common-styles.css');
+
+.search-results-content {
+  margin-top: 6.25rem;
+  padding: var(--base-spacing);
+}
+
+.page-title {
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+}
+
+.properties-list {
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+}
+
+.property-image-container {
+  height: clamp(180px, 25vw, 250px);
+}
+
+@media (max-width: 768px) {
+  .search-results-content {
+    margin-top: 5.5rem;
+  }
+}

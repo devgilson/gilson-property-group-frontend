@@ -1,0 +1,85 @@
+.social-login {
+    margin: 2rem 0;
+    text-align: center;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    color: #5C3B2E;
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid #E0B475;
+    margin: 0 1rem;
+}
+
+.social-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1.5rem;
+}
+
+.social-button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.3s ease;
+}
+
+.social-button:hover {
+    transform: scale(1.1);
+}
+
+.social-button img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .social-buttons {
+        gap: 1.5rem;
+    }
+
+    .social-button img {
+        width: 50%;
+        height: 50%;
+    }
+}
+
+@media (max-width: 480px) {
+    .social-buttons {
+        gap: 1rem;
+    }
+
+    .social-button {
+        width: 40px;
+        height: 40px;
+    }
+
+    .social-button img {
+        width: 35%;
+        height: 35%;
+    }
+}
+
+/* Added responsive design for foldable devices */
+@media (max-width: 600px) and (max-height: 800px) {
+    .social-button {
+        padding: 5px;
+    }
+
+    .social-button img {
+        width: 30px;
+        height: 30px;
+    }
+}

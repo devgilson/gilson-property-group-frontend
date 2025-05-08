@@ -1,0 +1,37 @@
+.navbar {
+    background-color: #333;
+    padding: 10px 20px;
+}
+
+.nav-list {
+    list-style: none;
+    display: flex;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+}
+
+.nav-item {
+    margin: 0 15px;
+}
+
+.nav-link {
+    color: white;
+    text-decoration: none;
+    font-size: 1.1rem;
+}
+
+.nav-link:hover {
+    color: #61dafb;
+}
+
+/* Added responsive design for foldable devices */
+@media (max-width: 600px) and (max-height: 800px) {
+    .navbar {
+        padding: 5px 10px;
+    }
+
+    .nav-item a {
+        font-size: 0.8rem;
+    }
+}

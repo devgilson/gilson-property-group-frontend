@@ -1,0 +1,141 @@
+.navbar {
+    background-color: #F5ECE2;
+    padding: 10px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    gap: 20px;
+}
+
+.nav-section {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.left-section {
+    justify-content: flex-start;
+}
+
+.right-section {
+    justify-content: flex-end;
+    gap: 20px;
+}
+
+.logo-section {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: center;
+}
+
+.logo img {
+    height: 50px;
+    width: auto;
+    max-width: 100%;
+}
+
+.nav-list {
+    list-style: none;
+    display: flex;
+    margin: 0;
+    padding: 0;
+    gap: 20px;
+}
+
+.nav-item {
+    white-space: nowrap;
+}
+
+.nav-item a {
+    font-family: 'Nunito', Arial, sans-serif;
+    color: #5C3B2E;
+    font-weight: bold;
+    font-size: 1.1rem;
+    text-decoration: none;
+}
+
+.nav-item a:hover {
+    color: #5C3B2E;
+    text-decoration: underline;
+}
+
+.icons-menu {
+    display: flex;
+    align-items: center;
+    padding: 8px 20px;
+    border-radius: 20px;
+    background-color: #7A3E3E;
+    gap: 20px;
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-button img {
+    width: 24px;
+    height: 24px;
+    filter: brightness(0) invert(1);
+}
+
+.profile-container {
+    position: relative;
+    display: inline-block;
+}
+
+.profile-dropdown {
+    position: absolute;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    padding: 10px;
+    min-width: 200px;
+    z-index: 1000;
+    display: none;
+}
+
+.profile-container:hover .profile-dropdown {
+    display: block;
+}
+
+@media (max-width: 1200px) {
+    .nav-item a {
+        font-size: 1rem;
+    }
+
+    .nav-list {
+        gap: 15px;
+    }
+}
+
+@media (max-width: 992px) {
+    .navbar {
+        padding: 10px 20px;
+    }
+
+    .nav-item a {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 600px) and (max-height: 800px) {
+    .navbar {
+        padding: 5px 20px;
+    }
+
+    .nav-item a {
+        font-size: 0.8rem;
+    }
+}
