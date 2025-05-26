@@ -1,67 +1,96 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { login as apiLogin, register as apiRegister } from '../services/authService';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
-    useEffect(() => {
-        const checkSession = async () => {
-            try {
-                const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/check-session`, {
-                    credentials: 'include'
+    const checkSession = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (token) {
+                // Verify token with backend
+                const response = await fetch('/api/check-session', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
                 });
-                const data = await response.json();
-                if (data.success) {
-                    setUser({ email: data.email });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    setUser(userData);
+                } else {
+                    localStorage.removeItem('token');
                 }
-            } catch (error) {
-                console.error('Session check failed:', error);
-            } finally {
-                setLoading(false);
             }
-        };
-        checkSession();
-
-        let inactivityTimer;
-        const resetTimer = () => {
-            clearTimeout(inactivityTimer);
-            inactivityTimer = setTimeout(() => {
-                logout();
-            }, 30 * 60 * 1000);
-        };
-
-        window.addEventListener('mousemove', resetTimer);
-        window.addEventListener('keypress', resetTimer);
-
-        resetTimer();
-
-        return () => {
-            clearTimeout(inactivityTimer);
-            window.removeEventListener('mousemove', resetTimer);
-            window.removeEventListener('keypress', resetTimer);
-        };
+        } catch (error) {
+            console.error('Session check failed:', error);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    const login = async (email) => {
-        setUser({ email });
-    };
+    useEffect(() => {
+        checkSession();
+    }, [checkSession]);
 
-    const logout = async () => {
+    const login = useCallback(async (email, password) => {
+        setLoading(true);
         try {
-            await fetch(`${process.env.REACT_APP_API_BASE_URL}/logout`, {
-                method: 'POST',
-                credentials: 'include'
+            const response = await apiLogin(email, password);
+            localStorage.setItem('token', response.token);
+            setUser({ email: response.email });
+            return response;
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const register = useCallback(async (email, password, userData) => {
+        setLoading(true);
+        try {
+            const response = await apiRegister(email, password, userData);
+            localStorage.setItem('token', response.token);
+            setUser({
+                email: response.email,
+                isGuest: response.isGuest || false
             });
+            return response;
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const logout = useCallback(async () => {
+        try {
+            await fetch('/api/logout', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+            localStorage.removeItem('token');
             setUser(null);
+            navigate('/login');
         } catch (error) {
             console.error('Logout failed:', error);
         }
+    }, [navigate]);
+
+    const value = {
+        user,
+        login,
+        register,
+        logout,
+        loading
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );

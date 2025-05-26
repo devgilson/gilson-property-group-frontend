@@ -8,6 +8,7 @@ const SearchResults = () => {
     const navigate = useNavigate();
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showAdjustAlert, setShowAdjustAlert] = useState(false);
     const [error, setError] = useState(null);
     const [filters, setFilters] = useState({
         collection: 'Any',
@@ -17,8 +18,7 @@ const SearchResults = () => {
         dates: 'MM/DD - MM/DD',
         sort: 'lowToHigh'
     });
-    
-    // Updated collection options to match backend exactly
+
     const collectionOptions = [
         { value: '', label: 'Any Collection' },
         { value: 'essentials', label: 'Essentials' },
@@ -41,7 +41,6 @@ const SearchResults = () => {
             searchParams.delete('category');
         }
 
-        // Reset to first page when changing collection
         searchParams.set('page', '0');
         navigate(`/search/results?${searchParams.toString()}`);
     };
@@ -62,29 +61,53 @@ const SearchResults = () => {
     const handlePropertyClick = (propertyId) => {
         const searchParams = new URLSearchParams(location.search);
         navigate(`/property/${propertyId}?${searchParams.toString()}`);
-      };
-      
-      useEffect(() => {
-        const searchParams = new URLSearchParams(location.search);
+    };
+
+    useEffect(() => {
+        if (!loading && !error && results.length > 0) {
+            const searchParams = new URLSearchParams(location.search);
+            const adults = parseInt(searchParams.get('adults')) || 0;
+            const children = parseInt(searchParams.get('children')) || 0;
+            const pets = parseInt(searchParams.get('pets')) || 0;
+            const totalGuests = adults + children;
+
+            const hasMatchingProperties = results.some(property => {
+                const matchesGuests = property.maxGuests >= totalGuests;
+                const matchesPets = pets === 0 || property.petsAllowed;
+                return matchesGuests && matchesPets;
+            });
+
+            setShowAdjustAlert(!hasMatchingProperties);
+        }
+    }, [loading, error, results, location.search]);
+
+    useEffect(() => {
         const fetchResults = async () => {
             try {
                 setLoading(true);
                 setError(null);
-                
-                // Build the API URL with all parameters
-                let apiUrl = `${apiBaseUrl}/properties/search/results?${searchParams.toString()}`;
-                console.log('Fetching results from:', apiUrl);
-    
+
+                const searchParams = new URLSearchParams(location.search);
+                const checkIn = searchParams.get('checkIn');
+                const checkOut = searchParams.get('checkOut');
+
+                if (!checkIn || !checkOut) {
+                    throw new Error('Missing date parameters');
+                }
+
+                const apiUrl = `${apiBaseUrl}/properties/search/results?${searchParams.toString()}`;
                 const response = await fetch(apiUrl);
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-    
+
                 const data = await response.json();
-                console.log('API response:', data);
-                
-                setResults(Array.isArray(data) ? data : []);
+                // Sort results with available properties first
+                const sortedResults = Array.isArray(data)
+                    ? [...data].sort((a, b) => (b.available - a.available))
+                    : [];
+                setResults(sortedResults);
             } catch (err) {
                 console.error('Error fetching results:', err);
                 setError(err.message);
@@ -93,9 +116,85 @@ const SearchResults = () => {
                 setLoading(false);
             }
         };
-    
+
         fetchResults();
     }, [location.search]);
+
+    const renderPropertyCard = (property) => {
+        const searchParams = new URLSearchParams(location.search);
+        const adults = parseInt(searchParams.get('adults')) || 0;
+        const children = parseInt(searchParams.get('children')) || 0;
+        const pets = parseInt(searchParams.get('pets')) || 0;
+        const totalGuests = adults + children;
+
+        const matchesGuests = property.maxGuests >= totalGuests;
+        const matchesPets = pets === 0 || property.petsAllowed;
+        const isMatch = matchesGuests && matchesPets;
+        const isBlocked = property.available === false;
+        const blockedProperties = results.filter(listing => listing.availabilityStatus === 'BLOCKED');
+
+        console.log(blockedProperties.map(l => ({ id: l.id, maxGuests: l.maxGuests, message: l.message })));
+
+
+        return (
+            <div
+                key={property.propertyId}
+                className={`property-card ${!isMatch ? 'non-matching' : ''} ${isBlocked ? 'blocked' : ''}`}
+                onClick={() => isMatch && !isBlocked && handlePropertyClick(property.propertyId)}
+                style={isBlocked ? {pointerEvents: 'none'} : {}}
+            >
+                <div className="property-image-container" style={{position: 'relative'}}>
+                    <img
+                        src={property.pictureUrl || 'https://via.placeholder.com/400x300?text=No+Image+Available'}
+                        alt={property.name}
+                        className="property-image"
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://via.placeholder.com/400x300?text=No+Image+Available';
+                        }}
+                    />
+                    {!isMatch && <div className="non-matching-overlay">Doesn't match your criteria</div>}
+                    {isBlocked && (
+                        <div className="blocked-banner">
+                            <span>Not available for selected dates</span>
+                        </div>
+                    )}
+                    {property.collection && (
+                        <span className="collection-badge">{property.collection}</span>
+                    )}
+                </div>
+
+                <div className="property-details">
+                    <h2 className="property-title">{property.name}</h2>
+                    <p className="property-location">
+                        {property.city}, {property.state || property.region}, {property.country}
+                    </p>
+                    <div className="property-specs">
+                        <span>{property.bedrooms || 'N/A'} beds</span>
+                        <span>{property.bathrooms || 'N/A'} baths</span>
+                        <span>Sleeps {property.maxGuests || 'N/A'}</span>
+                        {property.petsAllowed && <span>• Pets allowed</span>}
+                    </div>
+                    <div className="property-price">
+                        ${property.pricePerNight || property.basePrice || 'N/A'} <span>/ night</span>
+                    </div>
+                    {!isMatch && (
+                        <div className="mismatch-reasons">
+                            {!matchesGuests && <span>Max guests: {property.maxGuests}</span>}
+                            {!matchesPets && pets > 0 && <span>• No pets allowed</span>}
+                        </div>
+                    )}
+                    {property.amenities && (
+                        <div className="property-amenities">
+                            {Array.isArray(property.amenities)
+                                ? property.amenities.slice(0, 3).join(' · ')
+                                : property.amenities}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
 
     if (loading) {
         return (
@@ -166,78 +265,38 @@ const SearchResults = () => {
                     </div>
                 </div>
 
-                {results.length === 0 ? (
-                    <div className="no-results">
-                        <h3>No properties found in {filters.collection.toLowerCase()}</h3>
-                        <p>Try adjusting your search filters or selecting a different collection</p>
+                {showAdjustAlert && (
+                    <div className="adjust-alert">
+                        <div className="alert-content">
+                            <h3>No properties match all your criteria</h3>
+                            <p>Try adjusting your guest count or pet requirements, or browse similar properties below:</p>
+                            <button onClick={() => setShowAdjustAlert(false)}>×</button>
+                        </div>
                     </div>
-                ) : (
-                    <>
-                        <div className="properties-grid">
-                            {results.map((property) => (
-                                <div 
-                                    key={property.propertyId} 
-                                    className="property-card"
-                                    onClick={() => handlePropertyClick(property.propertyId)}
-                                >
-                                    <div className="property-image-container">
-                                        <img
-                                            src={property.pictureUrl || 'https://via.placeholder.com/400x300?text=No+Image+Available'}
-                                            alt={property.name}
-                                            className="property-image"
-                                            onError={(e) => {
-                                                e.target.onerror = null;
-                                                e.target.src = 'https://via.placeholder.com/400x300?text=No+Image+Available';
-                                            }}
-                                        />
-                                        {property.collection && (
-                                            <span className="collection-badge">{property.collection}</span>
-                                        )}
-                                    </div>
+                )}
 
-                                    <div className="property-details">
-                                        <h2 className="property-title">{property.name}</h2>
-                                        <p className="property-location">
-                                            {property.city}, {property.state || property.region}, {property.country}
-                                        </p>
-                                        <div className="property-specs">
-                                            <span>{property.bedrooms || 'N/A'} beds</span>
-                                            <span>{property.bathrooms || 'N/A'} baths</span>
-                                            <span>Sleeps {property.maxGuests || 'N/A'}</span>
-                                        </div>
-                                        <div className="property-price">
-                                            ${property.pricePerNight || property.basePrice || 'N/A'} <span>/ night</span>
-                                        </div>
-                                        {property.amenities && (
-                                            <div className="property-amenities">
-                                                {Array.isArray(property.amenities) 
-                                                    ? property.amenities.slice(0, 3).join(' · ')
-                                                    : property.amenities}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                <div className="properties-grid">
+                    {results.map(renderPropertyCard)}
+                </div>
 
-                        <div className="exclusive-services-section">
-                            <div className="exclusive-services-content">
-                                <h2>Exclusive Services</h2>
-                                <p>
-                                    Breckenridge Monthly, we go beyond just providing a home—we offer a seamless,
-                                    high-end living experience. Our concierge services ensure that every detail
-                                    of your stay is tailored to your needs, so you can focus on enjoying your
-                                    extended mountain retreat.
-                                </p>
-                                <button
-                                    className="exclusive-services-button"
-                                    onClick={() => navigate('/concierge')}
-                                >
-                                    View Exclusive Services
-                                </button>
-                            </div>
+                {results.length > 0 && (
+                    <div className="exclusive-services-section">
+                        <div className="exclusive-services-content">
+                            <h2>Exclusive Services</h2>
+                            <p>
+                                Breckenridge Monthly, we go beyond just providing a home—we offer a seamless,
+                                high-end living experience. Our concierge services ensure that every detail
+                                of your stay is tailored to your needs, so you can focus on enjoying your
+                                extended mountain retreat.
+                            </p>
+                            <button
+                                className="exclusive-services-button"
+                                onClick={() => navigate('/concierge')}
+                            >
+                                View Exclusive Services
+                            </button>
                         </div>
-                    </>
+                    </div>
                 )}
             </main>
         </div>

@@ -45,7 +45,7 @@ const PropertyDetails = () => {
     const [quoteLoading, setQuoteLoading] = useState(false);
     const [quoteError, setQuoteError] = useState(null);
     const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
-    
+
 
     // Get raw date strings and guest counts directly from URL
     const checkInStr = searchParams.get('checkIn');
@@ -58,9 +58,17 @@ const PropertyDetails = () => {
     // Format date for display (works directly with YYYY-MM-DD strings)
     const formatDisplayDate = (dateStr) => {
         if (!dateStr) return '';
+        if (dateStr.includes(',')) {
+            return dateStr;
+        }
         const [year, month, day] = dateStr.split('-');
         const date = new Date(`${year}-${month}-${day}`);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return date.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
     };
 
     // Calculate duration from string dates
@@ -69,7 +77,7 @@ const PropertyDetails = () => {
         const start = new Date(checkInStr);
         const end = new Date(checkOutStr);
         const diffTime = Math.abs(end - start);
-        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     };
 
     const fetchQuoteData = async () => {
@@ -80,7 +88,7 @@ const PropertyDetails = () => {
             setQuoteError(null);
 
             const response = await fetch(
-                `${apiBaseUrl}/properties/${id}/quote`, 
+                `${apiBaseUrl}/properties/${id}/quote`,
                 {
                     method: 'POST',
                     headers: {
@@ -111,13 +119,16 @@ const PropertyDetails = () => {
             }
 
             const responseData = await response.json();
-            
-            if (!responseData.data || !responseData.data.financials) {
+
+            // Updated validation check
+            if (!responseData.data?.data?.financials) {
+                console.log('Received quote data structure:', responseData); // Debug
                 throw new Error('Invalid quote data structure');
             }
 
-            setQuoteData(responseData.data);
-            
+            // Set the inner data object
+            setQuoteData(responseData.data.data);
+
         } catch (err) {
             console.error('Quote fetch error:', err);
             setQuoteError(err.message || 'Something went wrong. Please try again.');
@@ -158,7 +169,7 @@ const PropertyDetails = () => {
                 setNearbyPlaces(nearbyData.nearbyPlaces || []);
                 setReviews(reviewsData);
                 setAmenities(amenitiesData);
-                
+
                 await fetchQuoteData();
 
             } catch (err) {
@@ -206,37 +217,63 @@ const PropertyDetails = () => {
         if (!quoteData?.financials?.totals?.total?.amount) {
             return null;
         }
-        
+
         const duration = calculateStayDuration();
-        const totalAmount = quoteData.financials.totals.total.amount / 100;
-        
+        const totalAmount = quoteData?.financials.totals.total.amount / 100;
+
         if (duration >= 28) {
             return `$${(totalAmount / duration * 30).toFixed(2)} / month`;
         }
-        
+
         return `$${(totalAmount / duration).toFixed(2)} / night`;
     };
 
     const handleReserveClick = () => {
         navigate('/reservation', {
-          state: {
-            propertyDetails: {
-              id: property.id,
-              name: property.name,
-              selectedCheckIn: checkInStr,
-              selectedCheckOut: checkOutStr,
-              selectedRoomType: 'Entire property',
-              basePrice: quoteData?.financials?.totals?.sub_total?.amount ? 
-                        (quoteData.financials.totals.sub_total.amount / 100) : 0,
-              taxes: quoteData?.financials?.totals?.total?.amount ?
-                    (quoteData.financials.totals.total.amount - 
-                     quoteData.financials.totals.total_without_taxes?.amount) / 100 : 0,
-              fees: quoteData?.financials?.fees?.reduce((sum, fee) => sum + (fee.amount / 100), 0) || 0,
-              images: imageUrls,
-              amenities: amenities
+            state: {
+                propertyDetails: {
+                    id: property.id,
+                    name: property.name,
+                    selectedCheckIn: checkInStr,
+                    selectedCheckOut: checkOutStr,
+                    selectedRoomType: 'Entire property',
+                    basePrice: quoteData?.financials?.totals?.sub_total?.amount ?
+                        (quoteData?.financials.totals.sub_total.amount / 100) : 0,
+                    taxes: quoteData?.financials?.totals?.total?.amount ?
+                        (quoteData?.financials.totals.total.amount -
+                            quoteData?.financials.totals.total_without_taxes?.amount) / 100 : 0,
+                    fees: quoteData?.financials?.fees?.reduce((sum, fee) => sum + (fee.amount / 100), 0) || 0,
+                    images: imageUrls,
+                    amenities: amenities,
+                    quoteData: quoteData
+                }
             }
-          }
         });
+    };
+
+    const PricingSection = ({ quote, nights }) => {
+        if (!quote) return null;
+
+        return (
+            <div className="pricing-details">
+                <div className="price-line">
+                    <span>${quote.pricePerNight} × {nights} nights</span>
+                    <span>${(quote.pricePerNight * nights).toFixed(2)}</span>
+                </div>
+
+                {quote.fees.map((fee, i) => (
+                    <div className="price-line" key={i}>
+                        <span>{fee.label}</span>
+                        <span>{fee.formatted}</span>
+                    </div>
+                ))}
+
+                <div className="total-price">
+                    <span>Total</span>
+                    <span>${quote.total}</span>
+                </div>
+            </div>
+        );
     };
 
     const renderPaymentSection = () => {
@@ -261,17 +298,18 @@ const PropertyDetails = () => {
             total,
             total_without_taxes,
             sub_total
-        } = quoteData.financials.totals || {};
+        } = quoteData?.financials.totals || {};
 
         const duration = calculateStayDuration();
+        const pricePerNight = sub_total?.amount ? (sub_total.amount / 100 / duration).toFixed(2) : null;
         const monthlyRate = total?.amount ? (total.amount / 100 / duration * 30).toFixed(2) : null;
 
         return (
             <div className="payment-section">
                 <div className="payment-header">
-                    <h3>{monthlyRate ? `$${monthlyRate} / month` : calculateRate()}</h3>
+                    <h3>{`$${(total.amount / 100).toFixed(2)} / Total`}</h3>
                 </div>
-                
+
                 <div className="payment-dates">
                     <div className="date-field">
                         <label>Check-in</label>
@@ -286,45 +324,55 @@ const PropertyDetails = () => {
                         <div>
                             {adults} adult{adults !== 1 ? 's' : ''}
                             {children > 0 && `, ${children} child${children !== 1 ? 'ren' : ''}`}
+                            {pets > 0 && `, ${pets} pet${pets !== 1 ? 's' : ''}`}
                         </div>
                     </div>
                 </div>
-                
+
                 <div className="price-summary">
                     {sub_total?.amount && (
                         <div className="price-row">
-                            <span>${(sub_total.amount / 100).toFixed(2)} × {duration} nights</span>
+                            <span>${pricePerNight} × {duration} nights</span>
                             <span>${(sub_total.amount / 100).toFixed(2)}</span>
                         </div>
                     )}
-                    
-                    {quoteData.financials.fees?.map((fee, index) => (
+
+                    {quoteData?.financials.fees?.map((fee, index) => (
                         <div className="price-row" key={`fee-${index}`}>
                             <span>{fee.label}</span>
                             <span>{fee.formatted}</span>
                         </div>
                     ))}
-                    
-                    {quoteData.financials.taxes?.map((tax, index) => (
+
+                    {quoteData?.financials.taxes?.map((tax, index) => (
                         <div className="price-row" key={`tax-${index}`}>
                             <span>{tax.label}</span>
                             <span>{tax.formatted}</span>
                         </div>
                     ))}
-                    
+
                     {total_without_taxes?.amount && (
                         <div className="price-row">
                             <span>Total before taxes</span>
                             <span>${(total_without_taxes.amount / 100).toFixed(2)}</span>
                         </div>
                     )}
-                    
+
+                    {total?.amount && (
+                        <div className="price-row total-row">
+                            <span>Total</span>
+                            <span>${(total.amount / 100).toFixed(2)}</span>
+                        </div>
+                    )}
+
                     <div className="payment-note">
-                        You will not be charged yet.
+                        You won't be charged yet
                     </div>
                 </div>
-                
-                <button className="reserve-button" onClick={handleReserveClick}>Reserve Now</button>
+
+                <button className="reserve-button" onClick={handleReserveClick}>
+                    Reserve Now
+                </button>
             </div>
         );
     };
@@ -341,15 +389,15 @@ const PropertyDetails = () => {
         <div className="property-page-container">
             <div className="property-header">
                 <h1 className="property-name">{property.name}</h1>
-                
+
                 <div className="property-stats">
-                    <span>{property.capacity.bedrooms} Beds</span>
+                    <span>{property.bedrooms} Beds</span>
                     <span>·</span>
-                    <span>{property.capacity.bathrooms} Baths</span>
-                    {property.capacity.garages && (
+                    <span>{property.bathrooms} Baths</span>
+                    {property.garages && (
                         <>
                             <span>·</span>
-                            <span>{property.capacity.garages} Garages</span>
+                            <span>{property.garages} Garages</span>
                         </>
                     )}
                     {property.area && (
@@ -359,13 +407,13 @@ const PropertyDetails = () => {
                         </>
                     )}
                 </div>
-                
+
                 <div className="property-location">
-                    <span>{property.city}</span>, 
-                    <span> {property.state}</span>, 
+                    <span>{property.city}</span>,
+                    <span> {property.state}</span>,
                     <span> {property.country}</span>
                 </div>
-                
+
                 <div className="property-rating">
                     <StarRating rating={averageRating} />
                     <span className="rating-text">
@@ -392,7 +440,7 @@ const PropertyDetails = () => {
                                 }}
                                 style={{ opacity: imageLoaded ? 1 : 0 }}
                             />
-                            
+
                             {imageUrls.length > 1 && (
                                 <>
                                     <button
@@ -420,8 +468,8 @@ const PropertyDetails = () => {
                 {imageUrls.length > 1 && (
                     <div className="thumbnail-container">
                         {imageUrls.map((url, index) => (
-                            <div 
-                                key={index} 
+                            <div
+                                key={index}
                                 className={`thumbnail-wrapper ${index === currentImageIndex ? 'active' : ''}`}
                                 onClick={() => selectImage(index)}
                             >
@@ -451,8 +499,8 @@ const PropertyDetails = () => {
                                 {property.description.split('\n')
                                     .filter(line => line.trim())
                                     .map((line, index) => {
-                                        if (line.trim().startsWith('•') || 
-                                            line.trim().startsWith('*') || 
+                                        if (line.trim().startsWith('•') ||
+                                            line.trim().startsWith('*') ||
                                             line.trim().startsWith('-')) {
                                             return (
                                                 <li key={index} className="feature-item">
@@ -494,8 +542,8 @@ const PropertyDetails = () => {
                         {nearbyPlaces.map((place) => (
                             <div key={place.id} className="nearby-place-card">
                                 <div className="place-image-container">
-                                    <img 
-                                        src={place.photoUrl} 
+                                    <img
+                                        src={place.photoUrl}
                                         alt={place.name}
                                         className="place-image"
                                         onError={(e) => {
@@ -522,7 +570,7 @@ const PropertyDetails = () => {
                         <StarRating rating={averageRating} />
                         <span>{averageRating.toFixed(1)} ({reviewCount} reviews)</span>
                     </div>
-                    
+
                     <div className="reviews-grid">
                         {visibleReviews.map((review) => (
                             <div key={review.id} className="review-card">
@@ -534,7 +582,7 @@ const PropertyDetails = () => {
                                     <StarRating rating={review.rating} />
                                 </div>
                                 <div className="review-text">{review.reviewText}</div>
-                                
+
                                 <div className="detailed-ratings">
                                     {review.detailedRatings.map((rating) => (
                                         <div key={rating.type} className="rating-item">
@@ -546,9 +594,9 @@ const PropertyDetails = () => {
                             </div>
                         ))}
                     </div>
-                    
+
                     {reviews.reviews.length > 3 && (
-                        <button 
+                        <button
                             className="show-more-button"
                             onClick={() => setShowAllReviews(!showAllReviews)}
                         >

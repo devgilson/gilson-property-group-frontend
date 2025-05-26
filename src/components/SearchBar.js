@@ -1,28 +1,28 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getLocations, getAvailabilityByState, getAvailability } from '../services/api';
 import '../styles/SearchBar.css';
-import { getLocations, getBookedDates, getAllBookedDates, getBookedDatesByState, getAvailabilityByState, getAvailability } from '../services/api';
 
 const SearchBar = () => {
     const navigate = useNavigate();
-    const [location, setLocation] = useState('All locations');
-    const [dates, setDates] = useState('Check-in → Check-out');
-    const [guests, setGuests] = useState('2 guests');
-    
+
+    // Refs for dropdown handling
+    const locationRef = useRef(null);
+    const dateRef = useRef(null);
+    const guestRef = useRef(null);
+
+    // State for UI controls
     const [showLocationDropdown, setShowLocationDropdown] = useState(false);
     const [showDateDropdown, setShowDateDropdown] = useState(false);
     const [showGuestDropdown, setShowGuestDropdown] = useState(false);
-    
-    const [guestCounts, setGuestCounts] = useState({
-        adults: 2,
-        children: 0,
-        infants: 0,
-        pets: 0
-    });
 
-    const [locations, setLocations] = useState([]);
+    // State for search parameters
+    const [location, setLocation] = useState('All locations');
     const [selectedLocation, setSelectedLocation] = useState('');
-    const [bookedDates, setBookedDates] = useState({ dates: [] });
+    const [dates, setDates] = useState('Check-in → Check-out');
+    const [guests, setGuests] = useState('2 guests');
+
+    // State for calendar
     const [leftMonth, setLeftMonth] = useState(new Date());
     const [rightMonth, setRightMonth] = useState(() => {
         const date = new Date();
@@ -34,16 +34,67 @@ const SearchBar = () => {
         checkOut: null
     });
 
-    const locationRef = useRef(null);
-    const dateRef = useRef(null);
-    const guestRef = useRef(null);
+    // State for guest counts
+    const [guestCounts, setGuestCounts] = useState({
+        adults: 2,
+        children: 0,
+        infants: 0,
+        pets: 0
+    });
 
+    // State for data
+    const [locations, setLocations] = useState([]);
     const [availability, setAvailability] = useState({
         availableDates: [],
         bookedDates: []
     });
-    
 
+    // Memoized availability sets for faster lookups
+    const availabilityMaps = useMemo(() => ({
+        available: new Set(availability.availableDates),
+        booked: new Set(availability.bookedDates)
+    }), [availability]);
+
+    // Today's date for comparison (memoized)
+    const today = useMemo(() => {
+        const date = new Date();
+        date.setHours(0, 0, 0, 0);
+        return date;
+    }, []);
+
+    // Fetch locations on mount
+    useEffect(() => {
+        const fetchLocations = async () => {
+            try {
+                const data = await getLocations();
+                setLocations(data);
+            } catch (error) {
+                console.error('Error fetching locations:', error);
+            }
+        };
+        fetchLocations();
+    }, []);
+
+    // Update guests display text
+    useEffect(() => {
+        const totalGuests = guestCounts.adults + guestCounts.children;
+        setGuests(`${totalGuests} guest${totalGuests !== 1 ? 's' : ''}`);
+    }, [guestCounts]);
+
+    // Update dates display text
+    useEffect(() => {
+        if (selectedDates.checkIn && selectedDates.checkOut) {
+            const formatDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            setDates(`${formatDate(selectedDates.checkIn)} → ${formatDate(selectedDates.checkOut)}`);
+        } else if (selectedDates.checkIn) {
+            const formatDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            setDates(`${formatDate(selectedDates.checkIn)} → Check-out`);
+        } else {
+            setDates('Check-in → Check-out');
+        }
+    }, [selectedDates]);
+
+    // Click outside handler
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (locationRef.current && !locationRef.current.contains(event.target)) {
@@ -58,314 +109,143 @@ const SearchBar = () => {
         };
 
         document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Fetch availability when location changes
     useEffect(() => {
-        const totalGuests = guestCounts.adults + guestCounts.children;
-        setGuests(`${totalGuests} guest${totalGuests !== 1 ? 's' : ''}`);
-    }, [guestCounts]);
+        const abortController = new AbortController();
 
-    useEffect(() => {
-        if (selectedDates.checkIn && selectedDates.checkOut) {
-            const formatDate = (date) => {
-                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            };
-            setDates(`${formatDate(selectedDates.checkIn)} → ${formatDate(selectedDates.checkOut)}`);
-        } else if (selectedDates.checkIn) {
-            const formatDate = (date) => {
-                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            };
-            setDates(`${formatDate(selectedDates.checkIn)} → Check-out`);
-        } else {
-            setDates('Check-in → Check-out');
-        }
-    }, [selectedDates]);
-
-    useEffect(() => {
-        const fetchLocations = async () => {
-            try {
-                const data = await getLocations();
-                setLocations(data);
-            } catch (error) {
-                console.error('Error fetching locations:', error);
-            }
-        };
-        fetchLocations();
-    }, []);
-
-    useEffect(() => {
         const fetchAvailability = async () => {
             try {
+                const todayStr = today.toISOString().split('T')[0];
+                const endDate = new Date(today);
+                endDate.setMonth(endDate.getMonth() + 6);
+                const endDateStr = endDate.toISOString().split('T')[0];
+
                 let data;
-                const today = new Date().toISOString().split('T')[0];
-                const sixMonthsLater = new Date();
-                sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);
-                const endDate = sixMonthsLater.toISOString().split('T')[0];
-                
                 if (selectedLocation === 'CO' || selectedLocation === 'MI') {
-                    data = await getAvailabilityByState(selectedLocation, today, endDate);
-                    
-                    // Debug log to see what the API returns
-                    console.log('Availability data:', data);
-                    
-                    if (!data.availableDates || !data.bookedDates) {
-                        throw new Error('Invalid availability data structure');
-                    }
+                    data = await getAvailabilityByState(selectedLocation, todayStr, endDateStr);
                 } else if (selectedLocation) {
-                    data = await getAvailability(selectedLocation, today, endDate);
+                    data = await getAvailability(selectedLocation, todayStr, endDateStr);
                 } else {
                     data = { availableDates: [], bookedDates: [] };
                 }
-                
+
                 setAvailability({
                     availableDates: data.availableDates || [],
                     bookedDates: data.bookedDates || []
                 });
             } catch (error) {
-                console.error('Error fetching availability:', error);
-                setAvailability({
-                    availableDates: [],
-                    bookedDates: []
-                });
+                if (error.name !== 'AbortError') {
+                    console.error('Error fetching availability:', error);
+                    setAvailability({
+                        availableDates: [],
+                        bookedDates: []
+                    });
+                }
             }
         };
+
         fetchAvailability();
-    }, [selectedLocation]);
+        return () => abortController.abort();
+    }, [selectedLocation, today]);
 
-    const isDateDisabled = (date) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        // Disable dates before today
-        if (date < today) {
-            return true;
-        }
-        
-        // If no location selected, allow all future dates
-        if (!selectedLocation) return false;
-        
-        const dateStr = date.toISOString().split('T')[0];
-        
-        // Disable if date is not in availableDates OR is in bookedDates
-        return !availability.availableDates.includes(dateStr) || 
-               availability.bookedDates.includes(dateStr);
-    };
-
-    const getCapacityDetail = (property, field) => {
-        // Check if property has the field directly
-        if (property[field] !== undefined) return property[field];
-        
-        // Check capacityDetails array
-        if (Array.isArray(property.capacityDetails)) {
-            const capacity = property.capacityDetails[0];
-            if (capacity && capacity[field] !== undefined) {
-                return capacity[field];
-            }
-        }
-        
-        return 'N/A'; // Fallback value
-    };
-
-    const handleMonthChange = (increment, e) => {
-        e.stopPropagation();
-        const newLeftMonth = new Date(leftMonth);
-        newLeftMonth.setMonth(newLeftMonth.getMonth() + increment);
-        
-        const newRightMonth = new Date(newLeftMonth);
-        newRightMonth.setMonth(newRightMonth.getMonth() + 1);
-
-        setLeftMonth(newLeftMonth);
-        setRightMonth(newRightMonth);
-    };
-
-    const handleDateClick = (date, e) => {
-    e.stopPropagation();
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    if (date < today || isDateDisabled(date)) return;
-
-    if (!selectedDates.checkIn || selectedDates.checkIn > date || (selectedDates.checkIn && selectedDates.checkOut)) {
-        // New selection - check if date is available
-        const dateStr = date.toISOString().split('T')[0];
-        if (availability.availableDates.includes(dateStr)) {
-            setSelectedDates({
-                checkIn: date,
-                checkOut: null
-            });
-        }
-    } else if (selectedDates.checkIn && !selectedDates.checkOut && date > selectedDates.checkIn) {
-        // Check if all dates in range are available
-        let tempDate = new Date(selectedDates.checkIn);
-        tempDate.setDate(tempDate.getDate() + 1);
-        let allDatesAvailable = true;
-        
-        while (tempDate < date) {
-            const tempDateStr = tempDate.toISOString().split('T')[0];
-            if (!availability.availableDates.includes(tempDateStr)) {
-                allDatesAvailable = false;
-                break;
-            }
-            tempDate.setDate(tempDate.getDate() + 1);
-        }
-        
-        if (allDatesAvailable) {
-            setSelectedDates(prev => ({
-                ...prev,
-                checkOut: date
-            }));
-        } else {
-            // If any date in range is unavailable, reset to just this date
-            const dateStr = date.toISOString().split('T')[0];
-            if (availability.availableDates.includes(dateStr)) {
-                setSelectedDates({
-                    checkIn: date,
-                    checkOut: null
-                });
-            }
-        }
-    }
-};
-
-    const handleSearch = () => {
-        if (!selectedDates.checkIn || !selectedDates.checkOut) {
-            alert('Please select check-in and check-out dates');
-            return;
-        }
-    
-        const searchParams = new URLSearchParams();
-        
-        // Handle location parameter
-        if (selectedLocation) {
-            if (selectedLocation === 'CO' || selectedLocation === 'MI') {
-                // For state searches, we need to handle differently in the backend
-                searchParams.append('state', selectedLocation);
-            } else {
-                searchParams.append('location', selectedLocation);
-            }
-        }
-        
-        // Format dates correctly
-        const formatDate = (date) => {
-            return date.toISOString().split('T')[0];
-        };
-        
-        searchParams.append('checkIn', formatDate(selectedDates.checkIn));
-        searchParams.append('checkOut', formatDate(selectedDates.checkOut));
-        searchParams.append('adults', guestCounts.adults);
-        searchParams.append('children', guestCounts.children);
-        
-        navigate(`/search/results?${searchParams.toString()}`);
-    };
-
-    const handleGuestChange = (type, operation, e) => {
-        e.stopPropagation();
-        setGuestCounts(prev => {
-            const newValue = operation === 'increase' ? prev[type] + 1 : Math.max(0, prev[type] - 1);
-            return {
-                ...prev,
-                [type]: newValue
-            };
-        });
-    };
-
-    const generateCalendarDays = (month, year) => {
+    // Memoized calendar generation
+    const generateCalendarDays = useCallback((month, year) => {
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
         const daysInMonth = lastDay.getDate();
         const firstDayOfWeek = firstDay.getDay();
-        
+
         const days = [];
-        
+
+        // Previous month days
         const prevMonthLastDay = new Date(year, month, 0).getDate();
         for (let i = firstDayOfWeek - 1; i >= 0; i--) {
             days.push(new Date(year, month - 1, prevMonthLastDay - i));
         }
-        
+
+        // Current month days
         for (let i = 1; i <= daysInMonth; i++) {
             days.push(new Date(year, month, i));
         }
-        
+
+        // Next month days
         const totalCells = Math.ceil(days.length / 7) * 7;
         const nextMonthDays = totalCells - days.length;
         for (let i = 1; i <= nextMonthDays; i++) {
             days.push(new Date(year, month + 1, i));
         }
-        
+
         return days;
-    };
+    }, []);
 
+    // Memoized date disabled check
+    const isDateDisabled = useCallback((date) => {
+        if (date < today) return true;
+        if (!selectedLocation) return false;
 
-    const handleYearChange = (increment, e) => {
+        const dateStr = date.toISOString().split('T')[0];
+        return !availabilityMaps.available.has(dateStr) ||
+            availabilityMaps.booked.has(dateStr);
+    }, [availabilityMaps, selectedLocation, today]);
+
+    // Memoized date selection handlers
+    const handleDateClick = useCallback((date, e) => {
         e.stopPropagation();
-        const newLeftMonth = new Date(
-            leftMonth.getFullYear() + increment,
-            leftMonth.getMonth(),
-            1
-        );
-        setLeftMonth(newLeftMonth);
-        setRightMonth(new Date(
-            newLeftMonth.getFullYear(),
-            newLeftMonth.getMonth() + 1,
-            1
-        ));
-    };
+        if (date < today || isDateDisabled(date)) return;
 
-    const isDateSelected = (date) => {
-        if (!date) return false;
-        return (
-            (selectedDates.checkIn && date.toDateString() === selectedDates.checkIn.toDateString()) ||
-            (selectedDates.checkOut && date.toDateString() === selectedDates.checkOut.toDateString())
-        );
-    };
+        setSelectedDates(prev => {
+            // Same date click logic
+            if (prev.checkIn?.toDateString() === date.toDateString() && !prev.checkOut) {
+                return { checkIn: null, checkOut: null };
+            }
 
-    const isDateInRange = (date) => {
-        if (!date || !selectedDates.checkIn || !selectedDates.checkOut) return false;
-        return date > selectedDates.checkIn && date < selectedDates.checkOut;
-    };
+            // New selection logic
+            if (!prev.checkIn || date < prev.checkIn) {
+                return { checkIn: date, checkOut: null };
+            }
 
-    const renderCalendar = () => {
-        return (
-          <div className="dual-calendar" onClick={e => e.stopPropagation()}>
-            <div className="calendar-month">
-              <div className="calendar-header">
-                <button onClick={(e) => handleMonthChange(-1, e)}>&lt;</button>
-                <div className="month-year-selector">
-                  <span>
-                    {leftMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                  </span>
-                </div>
-                <button onClick={(e) => handleMonthChange(1, e)}>&gt;</button>
-              </div>
-              {renderSingleCalendar(leftMonth)}
-            </div>
-            
-            <div className="calendar-month">
-              <div className="calendar-header">
-                <button onClick={(e) => handleMonthChange(-1, e)}>&lt;</button>
-                <div className="month-year-selector">
-                  <span>
-                    {rightMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                  </span>
-                </div>
-                <button onClick={(e) => handleMonthChange(1, e)}>&gt;</button>
-              </div>
-              {renderSingleCalendar(rightMonth)}
-            </div>
-          </div>
-        );
-    };
+            // Range validation logic
+            if (prev.checkIn && !prev.checkOut) {
+                let tempDate = new Date(prev.checkIn);
+                tempDate.setDate(tempDate.getDate() + 1);
+                let allValid = true;
 
-    const renderSingleCalendar = (monthDate) => {
+                while (tempDate < date) {
+                    const dateStr = tempDate.toISOString().split('T')[0];
+                    if (!availabilityMaps.available.has(dateStr)) {
+                        allValid = false;
+                        break;
+                    }
+                    tempDate.setDate(tempDate.getDate() + 1);
+                }
+
+                return allValid
+                    ? { ...prev, checkOut: date }
+                    : { checkIn: date, checkOut: null };
+            }
+
+            return { checkIn: date, checkOut: null };
+        });
+    }, [availabilityMaps, isDateDisabled, today]);
+
+    // Memoized calendar rendering
+    const renderSingleCalendar = useCallback((monthDate, days) => {
         const month = monthDate.getMonth();
-        const year = monthDate.getFullYear();
-        const days = generateCalendarDays(month, year);
         const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        
+
+        const isDateSelected = (date) => {
+            return (selectedDates.checkIn && date.toDateString() === selectedDates.checkIn.toDateString()) ||
+                (selectedDates.checkOut && date.toDateString() === selectedDates.checkOut.toDateString());
+        };
+
+        const isDateInRange = (date) => {
+            return selectedDates.checkIn && selectedDates.checkOut &&
+                date > selectedDates.checkIn && date < selectedDates.checkOut;
+        };
+
         return (
             <div className="calendar">
                 <div className="calendar-weekdays">
@@ -373,28 +253,26 @@ const SearchBar = () => {
                         <div key={day} className="weekday">{day}</div>
                     ))}
                 </div>
-                
+
                 <div className="calendar-days">
                     {days.map((day, index) => {
                         const isCurrentMonth = day.getMonth() === month;
-                        const disabled = isDateDisabled(day);
+                        const disabled = !isCurrentMonth || isDateDisabled(day);
                         const selected = isDateSelected(day);
                         const inRange = isDateInRange(day);
-                        
-                        // Highlight available dates differently
                         const dateStr = day.toISOString().split('T')[0];
-                        const isAvailable = availability.availableDates.includes(dateStr);
-                        
+                        const isAvailable = availabilityMaps.available.has(dateStr);
+
                         return (
                             <div
-                                key={day.toISOString()}
+                                key={index}
                                 className={`calendar-day 
                                     ${!isCurrentMonth ? 'other-month' : ''}
                                     ${disabled ? 'disabled' : ''} 
                                     ${selected ? 'selected' : ''} 
                                     ${inRange ? 'in-range' : ''}
-                                    ${isAvailable && isCurrentMonth ? 'available' : ''}`}
-                                onClick={(e) => !disabled && isCurrentMonth && handleDateClick(day, e)}
+                                    ${isAvailable ? 'available' : ''}`}
+                                onClick={(e) => !disabled && handleDateClick(day, e)}
                             >
                                 {day.getDate()}
                             </div>
@@ -403,6 +281,30 @@ const SearchBar = () => {
                 </div>
             </div>
         );
+    }, [availabilityMaps, isDateDisabled, handleDateClick, selectedDates]);
+
+    // Memoized calendar data
+    const leftMonthDays = useMemo(() =>
+            generateCalendarDays(leftMonth.getMonth(), leftMonth.getFullYear()),
+        [generateCalendarDays, leftMonth]
+    );
+
+    const rightMonthDays = useMemo(() =>
+            generateCalendarDays(rightMonth.getMonth(), rightMonth.getFullYear()),
+        [generateCalendarDays, rightMonth]
+    );
+
+    // Event handlers
+    const handleMonthChange = (increment, e) => {
+        e.stopPropagation();
+        const newLeftMonth = new Date(leftMonth);
+        newLeftMonth.setMonth(newLeftMonth.getMonth() + increment);
+
+        const newRightMonth = new Date(newLeftMonth);
+        newRightMonth.setMonth(newRightMonth.getMonth() + 1);
+
+        setLeftMonth(newLeftMonth);
+        setRightMonth(newRightMonth);
     };
 
     const handleLocationSelect = (loc) => {
@@ -411,11 +313,43 @@ const SearchBar = () => {
         setShowLocationDropdown(false);
     };
 
+    const handleGuestChange = (type, operation, e) => {
+        e.stopPropagation();
+        setGuestCounts(prev => ({
+            ...prev,
+            [type]: Math.max(0, operation === 'increase' ? prev[type] + 1 : prev[type] - 1)
+        }));
+    };
+
+    const handleSearch = () => {
+        if (!selectedDates.checkIn || !selectedDates.checkOut) {
+            alert('Please select check-in and check-out dates');
+            return;
+        }
+
+        const params = new URLSearchParams();
+        if (selectedLocation) {
+            if (selectedLocation === 'CO' || selectedLocation === 'MI') {
+                params.append('state', selectedLocation);
+            } else {
+                params.append('location', selectedLocation);
+            }
+        }
+
+        params.append('checkIn', selectedDates.checkIn.toISOString().split('T')[0]);
+        params.append('checkOut', selectedDates.checkOut.toISOString().split('T')[0]);
+        params.append('adults', guestCounts.adults);
+        params.append('children', guestCounts.children);
+
+        navigate(`/search/results?${params.toString()}`);
+    };
+
     return (
         <div className="search-container">
             <div className="search-bar">
-                <div 
-                    className="search-field" 
+                {/* Location Dropdown */}
+                <div
+                    className="search-field"
                     ref={locationRef}
                     onClick={() => {
                         setShowLocationDropdown(!showLocationDropdown);
@@ -425,12 +359,12 @@ const SearchBar = () => {
                 >
                     <div className="search-value">{location}</div>
                     <div className="dropdown-arrow">⌄</div>
-                    
+
                     {showLocationDropdown && (
                         <div className="dropdown-menu">
                             <div className="dropdown-title">Select Location</div>
                             {locations.map((loc) => (
-                                <div 
+                                <div
                                     key={loc.id}
                                     className={`dropdown-item ${selectedLocation === loc.id ? 'selected' : ''}`}
                                     onClick={() => handleLocationSelect(loc)}
@@ -441,9 +375,10 @@ const SearchBar = () => {
                         </div>
                     )}
                 </div>
-                
-                <div 
-                    className="search-field" 
+
+                {/* Date Dropdown */}
+                <div
+                    className="search-field"
                     ref={dateRef}
                     onClick={() => {
                         setShowDateDropdown(!showDateDropdown);
@@ -453,16 +388,39 @@ const SearchBar = () => {
                 >
                     <div className="search-value">{dates}</div>
                     <div className="dropdown-arrow">⌄</div>
-                    
+
                     {showDateDropdown && (
                         <div className="date-dropdown-menu">
-                            {renderCalendar()}
+                            <div className="dual-calendar">
+                                <div className="calendar-month">
+                                    <div className="calendar-header">
+                                        <button onClick={(e) => handleMonthChange(-1, e)}>&lt;</button>
+                                        <span>
+                                            {leftMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                                        </span>
+                                        <button onClick={(e) => handleMonthChange(1, e)}>&gt;</button>
+                                    </div>
+                                    {renderSingleCalendar(leftMonth, leftMonthDays)}
+                                </div>
+
+                                <div className="calendar-month">
+                                    <div className="calendar-header">
+                                        <button onClick={(e) => handleMonthChange(-1, e)}>&lt;</button>
+                                        <span>
+                                            {rightMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                                        </span>
+                                        <button onClick={(e) => handleMonthChange(1, e)}>&gt;</button>
+                                    </div>
+                                    {renderSingleCalendar(rightMonth, rightMonthDays)}
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
-                
-                <div 
-                    className="search-field guest-field" 
+
+                {/* Guest Dropdown */}
+                <div
+                    className="search-field guest-field"
                     ref={guestRef}
                     onClick={() => {
                         setShowGuestDropdown(!showGuestDropdown);
@@ -472,94 +430,40 @@ const SearchBar = () => {
                 >
                     <div className="search-value">{guests}</div>
                     <div className="dropdown-arrow">⌄</div>
-                    
+
                     {showGuestDropdown && (
                         <div className="guest-dropdown-menu">
-                            <div className="guest-option">
-                                <div>
-                                    <div className="guest-label">Adults</div>
-                                    <div className="guest-subtext">Age 13+</div>
+                            {['adults', 'children', 'infants', 'pets'].map((type) => (
+                                <div key={type} className="guest-option">
+                                    <div>
+                                        <div className="guest-label">
+                                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                                        </div>
+                                        <div className="guest-subtext">
+                                            {type === 'adults' ? 'Age 13+' :
+                                                type === 'children' ? 'Ages 2 to 12' :
+                                                    type === 'infants' ? 'Under 2' :
+                                                        'Not including service animals'}
+                                        </div>
+                                    </div>
+                                    <div className="guest-counter">
+                                        <button
+                                            onClick={(e) => handleGuestChange(type, 'decrease', e)}
+                                            disabled={guestCounts[type] <= (type === 'adults' ? 1 : 0)}
+                                        >
+                                            -
+                                        </button>
+                                        <span>{guestCounts[type]}</span>
+                                        <button
+                                            onClick={(e) => handleGuestChange(type, 'increase', e)}
+                                        >
+                                            +
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="guest-counter">
-                                    <button 
-                                        onClick={(e) => handleGuestChange('adults', 'decrease', e)}
-                                        disabled={guestCounts.adults <= 1}
-                                    >
-                                        -
-                                    </button>
-                                    <span>{guestCounts.adults}</span>
-                                    <button 
-                                        onClick={(e) => handleGuestChange('adults', 'increase', e)}
-                                    >
-                                        +
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div className="guest-option">
-                                <div>
-                                    <div className="guest-label">Children</div>
-                                    <div className="guest-subtext">Ages 2 to 12</div>
-                                </div>
-                                <div className="guest-counter">
-                                    <button 
-                                        onClick={(e) => handleGuestChange('children', 'decrease', e)}
-                                        disabled={guestCounts.children <= 0}
-                                    >
-                                        -
-                                    </button>
-                                    <span>{guestCounts.children}</span>
-                                    <button 
-                                        onClick={(e) => handleGuestChange('children', 'increase', e)}
-                                    >
-                                        +
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div className="guest-option">
-                                <div>
-                                    <div className="guest-label">Infants</div>
-                                    <div className="guest-subtext">Under 2</div>
-                                </div>
-                                <div className="guest-counter">
-                                    <button 
-                                        onClick={(e) => handleGuestChange('infants', 'decrease', e)}
-                                        disabled={guestCounts.infants <= 0}
-                                    >
-                                        -
-                                    </button>
-                                    <span>{guestCounts.infants}</span>
-                                    <button 
-                                        onClick={(e) => handleGuestChange('infants', 'increase', e)}
-                                    >
-                                        +
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div className="guest-option">
-                                <div>
-                                    <div className="guest-label">Pets</div>
-                                    <div className="guest-subtext">Not including service animals</div>
-                                </div>
-                                <div className="guest-counter">
-                                    <button 
-                                        onClick={(e) => handleGuestChange('pets', 'decrease', e)}
-                                        disabled={guestCounts.pets <= 0}
-                                    >
-                                        -
-                                    </button>
-                                    <span>{guestCounts.pets}</span>
-                                    <button 
-                                        onClick={(e) => handleGuestChange('pets', 'increase', e)}
-                                    >
-                                        +
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <button 
+                            ))}
+
+                            <button
                                 className="done-button"
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -571,7 +475,7 @@ const SearchBar = () => {
                         </div>
                     )}
                 </div>
-                
+
                 <button className="search-button" onClick={handleSearch}>Search</button>
             </div>
         </div>

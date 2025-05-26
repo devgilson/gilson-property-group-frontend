@@ -1,29 +1,56 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import '../styles/LoginPage.css';
 import Header from "./Header";
 import Footer from "./Footer";
 import SocialButtons from "./SocialButtons";
 
 const LoginPage = () => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const { login } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        try {
+            await login(email, password);
+            const from = location.state?.from || '/';
+            navigate(from, { replace: true });
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="login-page">
             <Header />
-
             <main className="login-main">
                 <div className="login-wrapper">
                     <div className="login-card">
                         <div className="login-header">
                             <h1>Login</h1>
                             <p>Login to access your account.</p>
+                            {error && <div className="error-message">{error}</div>}
                         </div>
 
-                        <form className="login-form">
+                        <form className="login-form" onSubmit={handleSubmit}>
                             <div className="form-group">
                                 <label htmlFor="email">Email</label>
                                 <input
                                     type="email"
                                     id="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     placeholder="Email address"
                                     required
                                 />
@@ -34,6 +61,8 @@ const LoginPage = () => {
                                 <input
                                     type="password"
                                     id="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Password"
                                     required
                                 />
@@ -49,32 +78,23 @@ const LoginPage = () => {
                                 </Link>
                             </div>
 
-                            <button type="submit" className="login-button">Login</button>
+                            <button 
+                                type="submit" 
+                                className="login-button"
+                                disabled={loading}
+                            >
+                                {loading ? 'Logging in...' : 'Login'}
+                            </button>
 
                             <div className="signup-link">
                                 Don't have an account? <Link to="/signup">Sign up</Link>
                             </div>
 
-                            <div className="social-login">
-                                <div className="divider">Or login with</div>
-                                <div className="social-buttons">
-                                    <button type="button" className="social-button" aria-label="Login with Facebook">
-                                        <img src={require('../assets/facebook.png')} alt=""/>
-                                    </button>
-                                    <button type="button" className="social-button" aria-label="Login with Google">
-                                        <img src={require('../assets/google.png')} alt=""/>
-                                    </button>
-                                    <button type="button" className="social-button" aria-label="Login with Apple">
-                                        <img src={require('../assets/apple.png')} alt=""/>
-                                    </button>
-                                </div>
-                            </div>
-                            {/*<SocialButtons />*/}
+                            <SocialButtons />
                         </form>
                     </div>
                 </div>
             </main>
-
             <Footer/>
         </div>
     );

@@ -21,6 +21,7 @@ import './styles/App.css';
 import './styles/variables.css';
 import './styles/common-styles.css';
 import ReservationPage from './components/ReservationPage';
+import BookingConfirmation from './components/BookingConfirmation';
 
 class ErrorBoundary extends React.Component {
     constructor(props) {
@@ -59,11 +60,15 @@ function App() {
                         <Route path="/concierge" element={<ConciergeAndHospitality />} />
                         <Route path="/collections" element={<Collections />} />
                         <Route path="/reservation" element={<ReservationPage />} />
-                        <Route path="/reservations" element={
-                            <PrivateRoute>
-                                <ReservationsPage />
-                            </PrivateRoute>
-                        } />
+                        <Route path="/booking-confirmation" element={<BookingConfirmation />} />
+                        <Route 
+                            path="/reservations" 
+                            element={
+                                <PrivateRoute>
+                                    <ReservationsPage />
+                                </PrivateRoute>
+                            } 
+                        />
                         <Route path="/about" element={<AboutPage />} />
                         <Route path="/management" element={<Management />} />
                     </Routes>
