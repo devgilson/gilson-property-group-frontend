@@ -1,0 +1,44 @@
+.spinner {
+    display: inline-block;
+    position: relative;
+}
+
+.spinner-circle {
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top: 2px solid #3498db;
+    animation: spin 1s linear infinite;
+}
+
+.spinner-small .spinner-circle {
+    width: 16px;
+    height: 16px;
+}
+
+.spinner-medium .spinner-circle {
+    width: 24px;
+    height: 24px;
+}
+
+.spinner-large .spinner-circle {
+    width: 32px;
+    height: 32px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.date-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}

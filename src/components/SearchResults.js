@@ -88,26 +88,49 @@ const SearchResults = () => {
                 setError(null);
 
                 const searchParams = new URLSearchParams(location.search);
-                const checkIn = searchParams.get('checkIn');
-                const checkOut = searchParams.get('checkOut');
+                const params = {
+                    checkIn: searchParams.get('checkIn'),
+                    checkOut: searchParams.get('checkOut'),
+                    state: searchParams.get('state'),
+                    propertyId: searchParams.get('propertyId'),
+                    adults: searchParams.get('adults') || '2',
+                    children: searchParams.get('children') || '0',
+                    infants: searchParams.get('infants') || '0',
+                    pets: searchParams.get('pets') || '0'
+                };
 
-                if (!checkIn || !checkOut) {
+                // Validate required parameters
+                if (!params.checkIn || !params.checkOut) {
                     throw new Error('Missing date parameters');
                 }
 
-                const apiUrl = `${apiBaseUrl}/properties/search/results?${searchParams.toString()}`;
-                const response = await fetch(apiUrl);
+                // Build query string with all parameters
+                const queryString = new URLSearchParams({
+                    checkIn: params.checkIn,
+                    checkOut: params.checkOut,
+                    adults: params.adults,
+                    children: params.children,
+                    infants: params.infants,
+                    pets: params.pets,
+                    ...(params.state && { state: params.state }),
+                    ...(params.propertyId && { propertyId: params.propertyId })
+                }).toString();
+
+                const response = await fetch(`${apiBaseUrl}/properties/search/results?${queryString}`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
-                // Sort results with available properties first
-                const sortedResults = Array.isArray(data)
-                    ? [...data].sort((a, b) => (b.available - a.available))
-                    : [];
-                setResults(sortedResults);
+
+                // Handle both array and object responses
+                const results = Array.isArray(data) ?
+                    data :
+                    (data.content || data.results || []);
+
+                setResults(results);
+
             } catch (err) {
                 console.error('Error fetching results:', err);
                 setError(err.message);

@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getLocations, getAvailabilityByState, getAvailability } from '../services/api';
+import { getLocations, getAvailabilityByState, getAvailability, getAllBookedDates } from '../services/api';
 import '../styles/SearchBar.css';
+import { Spinner } from './Spinner';
+
+// Cache for availability data
+const availabilityCache = new Map();
+const CACHE_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
 
 const SearchBar = () => {
     const navigate = useNavigate();
@@ -15,6 +20,7 @@ const SearchBar = () => {
     const [showLocationDropdown, setShowLocationDropdown] = useState(false);
     const [showDateDropdown, setShowDateDropdown] = useState(false);
     const [showGuestDropdown, setShowGuestDropdown] = useState(false);
+    const [loadingDates, setLoadingDates] = useState(false);
 
     // State for search parameters
     const [location, setLocation] = useState('All locations');
@@ -62,12 +68,42 @@ const SearchBar = () => {
         return date;
     }, []);
 
-    // Fetch locations on mount
+    useEffect(() => {
+        const todayStr = today.toISOString().split('T')[0];
+        const endDate = new Date(today);
+        endDate.setMonth(endDate.getMonth() + 6);
+        const endDateStr = endDate.toISOString().split('T')[0];
+
+        // Load both locations and initial availability in parallel
+        Promise.all([
+            getLocations(),
+            getAllBookedDates(todayStr, endDateStr)
+        ]).then(([locationsData, availabilityData]) => {
+            setLocations(locationsData);
+            setAvailability({
+                availableDates: [],
+                bookedDates: availabilityData.bookedDates || []
+            });
+        }).catch(error => {
+            console.error('Error loading initial data:', error);
+            setAvailability({
+                availableDates: [],
+                bookedDates: []
+            });
+        });
+    }, [today]);
+
     useEffect(() => {
         const fetchLocations = async () => {
             try {
-                const data = await getLocations();
-                setLocations(data);
+                const cachedLocations = localStorage.getItem('cachedLocations');
+                if (cachedLocations) {
+                    setLocations(JSON.parse(cachedLocations));
+                } else {
+                    const data = await getLocations();
+                    setLocations(data);
+                    localStorage.setItem('cachedLocations', JSON.stringify(data));
+                }
             } catch (error) {
                 console.error('Error fetching locations:', error);
             }
@@ -112,9 +148,9 @@ const SearchBar = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Fetch availability when location changes
     useEffect(() => {
         const abortController = new AbortController();
+        setLoadingDates(true);
 
         const fetchAvailability = async () => {
             try {
@@ -129,7 +165,12 @@ const SearchBar = () => {
                 } else if (selectedLocation) {
                     data = await getAvailability(selectedLocation, todayStr, endDateStr);
                 } else {
-                    data = { availableDates: [], bookedDates: [] };
+                    // For "All locations", get all booked dates but consider all other dates as available
+                    const allBooked = await getAllBookedDates(todayStr, endDateStr);
+                    data = {
+                        availableDates: [], // Empty array means all dates are available except booked ones
+                        bookedDates: allBooked.bookedDates || []
+                    };
                 }
 
                 setAvailability({
@@ -137,13 +178,13 @@ const SearchBar = () => {
                     bookedDates: data.bookedDates || []
                 });
             } catch (error) {
-                if (error.name !== 'AbortError') {
-                    console.error('Error fetching availability:', error);
-                    setAvailability({
-                        availableDates: [],
-                        bookedDates: []
-                    });
-                }
+                console.error('Error in fetchAvailability:', error);
+                setAvailability({
+                    availableDates: [],
+                    bookedDates: []
+                });
+            } finally {
+                setLoadingDates(false);
             }
         };
 
@@ -181,17 +222,21 @@ const SearchBar = () => {
         return days;
     }, []);
 
-    // Memoized date disabled check
+    // Update date availability check
     const isDateDisabled = useCallback((date) => {
         if (date < today) return true;
-        if (!selectedLocation) return false;
-
         const dateStr = date.toISOString().split('T')[0];
-        return !availabilityMaps.available.has(dateStr) ||
-            availabilityMaps.booked.has(dateStr);
+
+        // For "All locations", disable only dates completely booked everywhere
+        if (!selectedLocation) {
+            return availabilityMaps.booked.has(dateStr);
+        }
+
+        // For specific locations, disable if booked or unavailable
+        return availabilityMaps.booked.has(dateStr) ||
+            !availabilityMaps.available.has(dateStr);
     }, [availabilityMaps, selectedLocation, today]);
 
-    // Memoized date selection handlers
     const handleDateClick = useCallback((date, e) => {
         e.stopPropagation();
         if (date < today || isDateDisabled(date)) return;
@@ -207,7 +252,12 @@ const SearchBar = () => {
                 return { checkIn: date, checkOut: null };
             }
 
-            // Range validation logic
+            // Skip range validation for "All locations"
+            if (!selectedLocation) {
+                return { ...prev, checkOut: date };
+            }
+
+            // Range validation logic for specific locations
             if (prev.checkIn && !prev.checkOut) {
                 let tempDate = new Date(prev.checkIn);
                 tempDate.setDate(tempDate.getDate() + 1);
@@ -227,9 +277,9 @@ const SearchBar = () => {
                     : { checkIn: date, checkOut: null };
             }
 
-            return { checkIn: date, checkOut: null };
+            return { ...prev, checkOut: date };
         });
-    }, [availabilityMaps, isDateDisabled, today]);
+    }, [availabilityMaps, isDateDisabled, today, selectedLocation]);
 
     // Memoized calendar rendering
     const renderSingleCalendar = useCallback((monthDate, days) => {
@@ -257,22 +307,32 @@ const SearchBar = () => {
                 <div className="calendar-days">
                     {days.map((day, index) => {
                         const isCurrentMonth = day.getMonth() === month;
-                        const disabled = !isCurrentMonth || isDateDisabled(day);
+                        const disabled = !isCurrentMonth || day < today;
                         const selected = isDateSelected(day);
                         const inRange = isDateInRange(day);
                         const dateStr = day.toISOString().split('T')[0];
-                        const isAvailable = availabilityMaps.available.has(dateStr);
+
+                        // Simplified availability logic
+                        const isBooked = availabilityMaps.booked.has(dateStr);
+                        const isAvailable = selectedLocation
+                            ? availabilityMaps.available.has(dateStr) && !isBooked
+                            : !isBooked;
 
                         return (
                             <div
                                 key={index}
                                 className={`calendar-day 
-                                    ${!isCurrentMonth ? 'other-month' : ''}
-                                    ${disabled ? 'disabled' : ''} 
-                                    ${selected ? 'selected' : ''} 
-                                    ${inRange ? 'in-range' : ''}
-                                    ${isAvailable ? 'available' : ''}`}
-                                onClick={(e) => !disabled && handleDateClick(day, e)}
+                                ${!isCurrentMonth ? 'other-month' : ''}
+                                ${disabled ? 'disabled' : ''} 
+                                ${selected ? 'selected' : ''} 
+                                ${inRange ? 'in-range' : ''}
+                                ${isAvailable ? 'available' : 'booked'}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!disabled && isAvailable) {
+                                        handleDateClick(day, e);
+                                    }
+                                }}
                             >
                                 {day.getDate()}
                             </div>
@@ -281,7 +341,7 @@ const SearchBar = () => {
                 </div>
             </div>
         );
-    }, [availabilityMaps, isDateDisabled, handleDateClick, selectedDates]);
+    }, [availabilityMaps, selectedDates, selectedLocation, today, handleDateClick]);
 
     // Memoized calendar data
     const leftMonthDays = useMemo(() =>
@@ -308,9 +368,11 @@ const SearchBar = () => {
     };
 
     const handleLocationSelect = (loc) => {
-        setSelectedLocation(loc.id);
-        setLocation(loc.name);
+        setSelectedLocation(loc?.id || '');
+        setLocation(loc?.name || 'All locations');
         setShowLocationDropdown(false);
+        // Reset dates when location changes
+        setSelectedDates({ checkIn: null, checkOut: null });
     };
 
     const handleGuestChange = (type, operation, e) => {
@@ -328,11 +390,13 @@ const SearchBar = () => {
         }
 
         const params = new URLSearchParams();
+
+        // Handle location parameter correctly
         if (selectedLocation) {
             if (selectedLocation === 'CO' || selectedLocation === 'MI') {
                 params.append('state', selectedLocation);
             } else {
-                params.append('location', selectedLocation);
+                params.append('propertyId', selectedLocation); // Changed from 'location' to 'propertyId'
             }
         }
 
@@ -363,6 +427,16 @@ const SearchBar = () => {
                     {showLocationDropdown && (
                         <div className="dropdown-menu">
                             <div className="dropdown-title">Select Location</div>
+                            <div
+                                className={`dropdown-item ${!selectedLocation ? 'selected' : ''}`}
+                                onClick={() => {
+                                    setSelectedLocation('');
+                                    setLocation('All locations');
+                                    setShowLocationDropdown(false);
+                                }}
+                            >
+                                All locations
+                            </div>
                             {locations.map((loc) => (
                                 <div
                                     key={loc.id}
@@ -391,6 +465,11 @@ const SearchBar = () => {
 
                     {showDateDropdown && (
                         <div className="date-dropdown-menu">
+                            {loadingDates && (
+                                <div className="date-loading-overlay">
+                                    <Spinner size="small" />
+                                </div>
+                            )}
                             <div className="dual-calendar">
                                 <div className="calendar-month">
                                     <div className="calendar-header">

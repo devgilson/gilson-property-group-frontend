@@ -186,8 +186,21 @@ export async function getBookedDates(propertyId) {
     return data;
 }
 
-export async function getAllBookedDates() {
-    return { dates: [] };
+export async function getAllBookedDates(startDate, endDate) {
+    const response = await fetch(
+        `${API_BASE_URL}/properties/all-booked-dates?start_date=${startDate}&end_date=${endDate}`,
+        {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error('Failed to fetch all booked dates');
+    }
+    return await response.json();
 }
 
 export async function getBookedDatesByState(stateCode) {
