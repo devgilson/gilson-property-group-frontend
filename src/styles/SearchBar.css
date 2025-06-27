@@ -1,4 +1,3 @@
-/* Search Container */
 .search-container {
     max-width: 1200px;
     margin: 2rem auto;
@@ -6,45 +5,46 @@
     font-family: 'Nunito', sans-serif;
 }
 
-/* Search Bar */
-.search-bar {
-    display: flex;
-    background: white;
-    border-radius: 30px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    overflow: visible;
+.search-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    padding: 24px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    align-items: end;
     position: relative;
-    align-items: center;
-    padding: 4px;
-    gap: 4px;
 }
 
-/* Search Fields */
 .search-field {
-    flex: 1;
-    padding: 12px 16px;
-    border-radius: 24px;
-    cursor: pointer;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    background: #F5ECE2;
+    border-radius: 6px;
+    padding: 12px;
+    cursor: pointer;
     position: relative;
-    background-color: #F5ECE2;
-    color: #5C3B2E;
-    min-height: 48px;
-    transition: all 0.2s ease;
+    z-index: 1;
 }
 
-.search-field:hover {
-    background-color: #E8D9C8;
+.search-label {
+    font-size: 12px;
+    color: #5C3B2E;
+    font-weight: 600;
+    margin-bottom: 4px;
 }
 
 .search-value {
     font-size: 14px;
     font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: #5C3B2E;
+}
+
+.search-value-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .dropdown-arrow {
@@ -53,34 +53,33 @@
     color: #5C3B2E;
 }
 
-/* Dropdown Menus */
-.dropdown-menu {
+.dropdown-menu,
+.date-dropdown-menu,
+.guest-dropdown-menu {
     position: absolute;
-    top: calc(100% + 8px);
+    top: 100%;
     left: 0;
-    width: 300px;
+    width: 100%;
+    margin-top: 8px;
     background: white;
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
     z-index: 1000;
-    padding: 12px 0;
-    max-height: 400px;
-    overflow-y: auto;
+    padding: 16px;
 }
 
 .dropdown-title {
-    padding: 8px 16px;
     font-weight: 600;
-    color: #5C3B2E;
     font-size: 14px;
+    margin-bottom: 8px;
+    color: #5C3B2E;
 }
 
 .dropdown-item {
     padding: 12px 16px;
-    cursor: pointer;
-    color: #5C3B2E;
     font-size: 14px;
-    transition: background-color 0.2s;
+    color: #5C3B2E;
+    cursor: pointer;
 }
 
 .dropdown-item:hover {
@@ -92,19 +91,7 @@
     color: white;
 }
 
-/* Date Dropdown Specific */
-.date-dropdown-menu {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    width: 700px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
-    padding: 16px;
-}
-
+/* Calendar Styles */
 .dual-calendar {
     display: flex;
     gap: 20px;
@@ -112,13 +99,6 @@
 
 .calendar-month {
     width: 50%;
-    padding: 0 10px;
-}
-
-.calendar {
-    display: grid;
-    grid-template-rows: auto 1fr;
-    height: 100%;
 }
 
 .calendar-header {
@@ -128,46 +108,29 @@
     margin-bottom: 10px;
 }
 
-
-.calendar-header h4 {
-    color: #5C3B2E;
-    font-size: 16px;
-    font-weight: 600;
-    margin: 0;
-}
-
 .calendar-header button {
     background: none;
     border: none;
-    cursor: pointer;
     font-size: 16px;
     padding: 5px 10px;
+    cursor: pointer;
 }
 
 .calendar-header button:hover {
     background-color: #F5ECE2;
 }
 
-.calendar-weekdays {
+.calendar-weekdays,
+.calendar-days {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    font-weight: bold;
-    margin-bottom: 8px;
 }
 
 .weekday {
     text-align: center;
     font-size: 12px;
-    color: #5C3B2E;
     font-weight: 500;
-}
-
-.calendar-days {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    grid-template-rows: repeat(6, 1fr);
-    gap: 4px;
+    color: #5C3B2E;
 }
 
 .calendar-day {
@@ -177,11 +140,7 @@
     height: 36px;
     border-radius: 50%;
     cursor: pointer;
-}
-
-.calendar-day.empty {
-    background: transparent;
-    cursor: default;
+    font-size: 13px;
 }
 
 .calendar-day.other-month {
@@ -189,14 +148,10 @@
     pointer-events: none;
 }
 
-.calendar-day:hover:not(.empty):not(.disabled) {
-    background-color: #F5ECE2;
-}
-
 .calendar-day.disabled {
     color: #ccc;
-    cursor: not-allowed;
     text-decoration: line-through;
+    cursor: not-allowed;
 }
 
 .calendar-day.selected {
@@ -208,19 +163,25 @@
     background-color: rgba(92, 59, 46, 0.1);
 }
 
-/* Guest Dropdown Specific */
-.guest-dropdown-menu {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    width: 320px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
-    padding: 16px;
+.calendar-day.available:hover {
+    background-color: #e0ffe0;
 }
 
+.calendar-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255,255,255,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+
+/* Guest Dropdown */
 .guest-option {
     display: flex;
     justify-content: space-between;
@@ -231,15 +192,14 @@
 
 .guest-label {
     font-weight: 600;
-    color: #5C3B2E;
     font-size: 14px;
+    color: #5C3B2E;
 }
 
 .guest-subtext {
     font-size: 12px;
     color: #5C3B2E;
     opacity: 0.7;
-    margin-top: 4px;
 }
 
 .guest-counter {
@@ -256,9 +216,6 @@
     background: white;
     color: #5C3B2E;
     font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     cursor: pointer;
 }
 
@@ -271,12 +228,6 @@
     background: #F5ECE2;
 }
 
-.guest-counter span {
-    min-width: 20px;
-    text-align: center;
-    font-size: 14px;
-}
-
 .done-button {
     width: 100%;
     padding: 12px;
@@ -286,8 +237,8 @@
     border: none;
     border-radius: 8px;
     font-weight: 600;
-    cursor: pointer;
     font-size: 14px;
+    cursor: pointer;
 }
 
 .done-button:hover {
@@ -296,91 +247,58 @@
 
 /* Search Button */
 .search-button {
-    background-color: #5C3B2E;
-    color: white;
+    background-color: #E0B475;
+    color: #5C3B2E;
     border: none;
-    padding: 12px 24px;
-    border-radius: 24px;
-    font-weight: 600;
+    padding: 14px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 16px;
     cursor: pointer;
-    white-space: nowrap;
-    font-size: 14px;
-    transition: background-color 0.2s;
+    align-self: end;
+    height: 100%;
 }
 
 .search-button:hover {
-    background-color: #4a3024;
+    background-color: #cc9a3a;
 }
 
-/* Month/Year Navigation */
-.month-year-selector {
-    font-weight: bold;
-}
-calendar-day.available:not(.disabled) {
-    background-color: #f0fff0; /* Light green for available dates */
-    cursor: pointer;
-}
-
-.calendar-day.available:hover:not(.disabled) {
-    background-color: #e0ffe0;
-}
-
-.month-year-selector select {
-    padding: 5px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-}
-
-/* Calendar Navigation Buttons */
-.calendar-header button {
-    background: none;
-    border: none;
-    font-size: 16px;
-    cursor: pointer;
-    padding: 0 10px;
-}
-
-.calendar-header button:hover {
-    background-color: #f5f5f5;
-}
-
-/* Date Selection */
-.calendar-day.selected {
-    background-color: #5C3B2E;
-    color: white;
-    border-radius: 50%;
-}
-
-.calendar-day.in-range {
-    background-color: rgba(92, 59, 46, 0.1);
-}
-
-/* Responsive Design */
+/* Responsive */
 @media (max-width: 768px) {
-    .search-bar {
-        flex-direction: column;
-        border-radius: 12px;
-        padding: 12px;
-        gap: 8px;
-    }
-    
-    .search-field {
-        width: 100%;
-    }
-    
-    .date-dropdown-menu {
-        width: 100%;
-        right: auto;
-        left: 0;
-    }
-    
-    .guest-dropdown-menu {
-        width: 100%;
-        right: auto;
-        left: 0;
+    .search-grid {
+        grid-template-columns: 1fr;
     }
 
-    .dual-calendar {
-        flex-direction: column;
+    .search-button {
+        width: 100%;
     }
 }
+
+.date-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    z-index: 999;
+    padding: 16px;
+    width: 600px;
+}
+
+.below-checkin {
+    left: 230px; /* tweak depending on layout */
+}
+
+.below-checkout {
+    left: 460px; /* tweak to align under check-out */
+}
+
+@media (max-width: 768px) {
+    .date-dropdown-menu {
+        left: 0 !important;
+        width: 100%;
+    }
+}
+

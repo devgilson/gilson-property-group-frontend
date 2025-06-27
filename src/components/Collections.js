@@ -7,15 +7,6 @@ const Collections = () => {
     const [activeTab, setActiveTab] = useState('Essentials');
     const navigate = useNavigate();
 
-    // Map the tab IDs to the corresponding collection values used in the search
-    const collectionMapping = {
-        Essentials: 'essentials',
-        Resort: 'resort',
-        Luxury: 'luxury',
-        Independence: 'independence',
-        DayPlus: '30day'
-    };
-
     const tabs = [
         { id: 'Essentials', label: 'Essentials' },
         { id: 'Resort', label: 'Resort' },
@@ -23,6 +14,14 @@ const Collections = () => {
         { id: 'Independence', label: 'Independence' },
         { id: 'DayPlus', label: '30 Day+' },
     ];
+
+    const collectionMapping = {
+        Essentials: 'essentials',
+        Resort: 'resort',
+        Luxury: 'luxury',
+        Independence: 'independence',
+        DayPlus: '30day'
+    };
 
     const collectionsData = {
         Essentials: {
@@ -39,60 +38,63 @@ const Collections = () => {
         },
         Resort: {
             title: "Resort Collection",
-            description: "Experience resort-style living with premium amenities and services.",
+            description: "Amenities-driven homes offering a resort-style experience with extra comfort.",
             features: [
-                "Luxurious furnishings and high-end finishes",
-                "Access to resort facilities and concierge",
-                "Premium kitchen with gourmet appliances",
-                "Spacious layouts with mountain views",
-                "Prime locations near ski lifts and trails"
+                "Access to pools, hot tubs, and wellness facilities",
+                "Concierge services for personalized recommendations",
+                "Ski-in/ski-out options for effortless mountain access",
+                "Upscale furnishings with an emphasis on relaxation",
+                "Premium entertainment systems and home automation"
             ],
             buttonText: "Explore Resort"
         },
         Luxury: {
             title: "Luxury Collection",
-            description: "The pinnacle of mountain living with exceptional design and service.",
+            description: "The most exclusive homes for an unmatched, high-end mountain retreat.",
             features: [
-                "Designer furnishings and custom interiors",
-                "Smart home technology throughout",
-                "Professional-grade chef's kitchen",
-                "Expansive outdoor living spaces",
-                "Most exclusive locations in Breckenridge"
+                "Expansive estates with panoramic mountain views",
+                "Bespoke interior design featuring premium materials",
+                "Private chef, butler, and concierge services available",
+                "Spa-like bathrooms and top-tier amenities",
+                "Exclusive, secluded locations for ultimate privacy"
             ],
             buttonText: "Explore Luxury"
         },
         Independence: {
             title: "Independence Collection",
-            description: "Perfect for those who value space and privacy in the mountains.",
+            description: "Handpicked homes perfect for celebrating the changing beauty of the Rockies.",
             features: [
-                "Private, standalone properties",
-                "Generous square footage for families/groups",
-                "Fully equipped for long-term comfort",
-                "Peaceful locations with mountain views",
-                "Garage and additional storage space"
+                "Cozy cabins for winter escapes with fireplaces and heated floors",
+                "Breezy, sunlit homes for the perfect summer retreat",
+                "Scenic fall foliage views and access to hiking trails",
+                "Outdoor living spaces, from fire pits to private balconies",
+                "Designed to capture the magic of each season in Breckenridge"
             ],
-            buttonText: "Explore Independence"
+            buttonText: "Explore Seasonal"
         },
         DayPlus: {
-            title: "30 Day+ Collection",
-            description: "Specialized homes designed for extended stays of a month or longer.",
+            title: "30 Day + Collection",
+            description: "Handpicked homes perfect for extended stays of a month or longer.",
             features: [
-                "Discounted rates for long-term bookings",
-                "All utilities and services included",
-                "Laundry facilities in every unit",
-                "Pet-friendly options available",
-                "Flexible lease terms"
+                "Cozy cabins for winter escapes with fireplaces and heated floors",
+                "Breezy, sunlit homes for the perfect summer retreat",
+                "Scenic fall foliage views and access to hiking trails",
+                "Outdoor living spaces, from fire pits to private balconies",
+                "Designed to capture the magic of each season in Breckenridge"
             ],
-            buttonText: "Explore 30 Day+"
+            buttonText: "Explore Seasonal"
         }
     };
 
     const handleExploreClick = (collectionId) => {
-        // Get the corresponding collection value from the mapping
         const collectionValue = collectionMapping[collectionId];
-        // Navigate to search results with the collection filter applied
         navigate(`/search/results?category=${collectionValue}`);
     };
+
+    const sortedCollections = [
+        activeTab,
+        ...tabs.filter(tab => tab.id !== activeTab).map(tab => tab.id)
+    ];
 
     return (
         <div className="collections-container">
@@ -100,7 +102,7 @@ const Collections = () => {
             <p className="intro-text">
                 Each Home Collection is designed to match different lifestyles and preferences. Whether you're seeking a cozy, well-equipped stay, a resort-like experience, a seasonal escape, or the pinnacle of luxury, our curated homes provide the ideal setting for your extended mountain getaway.
             </p>
-            
+
             <div className="tabs-container">
                 {tabs.map((tab) => (
                     <button
@@ -113,25 +115,57 @@ const Collections = () => {
                 ))}
             </div>
 
-            <div className="collection-card">
-                <div className="card-content">
-                    <h2>{collectionsData[activeTab].title}</h2>
-                    <p className="description">{collectionsData[activeTab].description}</p>
-                    <ul className="features-list">
-                        {collectionsData[activeTab].features.map((feature, index) => (
-                            <li key={index}>{feature}</li>
-                        ))}
-                    </ul>
-                    <button 
-                        className="explore-button"
-                        onClick={() => handleExploreClick(activeTab)}
-                    >
-                        {collectionsData[activeTab].buttonText}
-                    </button>
+            {sortedCollections.map((key) => (
+                <div key={key} className="collection-card">
+                    <div className="card-content">
+                        <h2>{collectionsData[key].title}</h2>
+                        <p className="description">{collectionsData[key].description}</p>
+                        <ul className="features-list">
+                            {collectionsData[key].features.map((feature, index) => (
+                                <li key={index}>{feature}</li>
+                            ))}
+                        </ul>
+                        <button
+                            className="explore-button"
+                            onClick={() => handleExploreClick(key)}
+                        >
+                            {collectionsData[key].buttonText}
+                        </button>
+                    </div>
+                    <div className="card-image">
+                        <img src={collectionImage} alt={collectionsData[key].title} />
+                    </div>
                 </div>
-                <div className="card-image">
-                    <img src={collectionImage} alt={collectionsData[activeTab].title} />
-                </div>
+            ))}
+
+            {/* Explore Michigan Section */}
+            <div className="info-section">
+                <h2>Explore Michigan Stays</h2>
+                <p className="info-subtext">
+                    While our roots are in the breathtaking landscapes of Colorado, we're excited to offer equally stunning monthly rental experiences in Michigan.
+                    Our Michigan home collection brings the same level of exclusivity, comfort, and luxury you expect.
+                </p>
+                <button
+                    className="info-button"
+                    onClick={() => navigate('/search/results?state=Michigan')}
+                >
+                    Go to Michigan homes
+                </button>
+            </div>
+
+            {/* Free Rental Evaluation */}
+            <div className="info-section">
+                <h2>Free Rental Evaluation</h2>
+                <p className="info-subtext">
+                    Curious about your property's rental potential? Get a personalized evaluation and discover how much you could earn with a 30-day rental.
+                    No commitment, just insights!
+                </p>
+                <button
+                    className="info-button"
+                    onClick={() => navigate('/rental-evaluation')}
+                >
+                    Get Your Free Rental Evaluation
+                </button>
             </div>
         </div>
     );

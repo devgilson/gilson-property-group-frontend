@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/ReservationFlow.css';
 import { useAuth } from './../context/AuthContext';
 import { blockDates } from '../services/api';
+import StripeWrapper from "./StripeWrapper";
+import CheckoutForm from "./CheckoutForm";
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 const ReservationFlow = ({ propertyDetails }) => {
@@ -69,10 +71,11 @@ const ReservationFlow = ({ propertyDetails }) => {
   };
 
   const handleNext = () => {
-    if (currentStep < 2) {
+    if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     }
   };
+
 
   const handlePrevious = () => {
     if (currentStep > 1) {
@@ -181,6 +184,7 @@ const ReservationFlow = ({ propertyDetails }) => {
       <div className="progress-steps">
         <div className={`step ${currentStep >= 1 ? 'active' : ''}`}>1</div>
         <div className={`step ${currentStep >= 2 ? 'active' : ''}`}>2</div>
+        <div className={`step ${currentStep >= 3 ? 'active' : ''}`}>3</div>
       </div>
 
       <div className="step-indicator">
@@ -330,12 +334,23 @@ const ReservationFlow = ({ propertyDetails }) => {
             <button className="back-btn" onClick={handlePrevious}>Back</button>
             <button
                 className="confirm-btn"
-                onClick={handleConfirmBooking}
+                onClick={handleNext}
             >
-              {currentUser ? 'Confirm Booking' : 'Continue as Guest'}
+              Proceed to Payment
             </button>
           </div>
         </div>
+      )}
+      {currentStep === 3 && (
+          <div className="step-content">
+            <h2>Payment</h2>
+            <StripeWrapper>
+              <CheckoutForm reservationData={reservationData} />
+            </StripeWrapper>
+            <div className="button-group">
+              <button className="back-btn" onClick={handlePrevious}>Back</button>
+            </div>
+          </div>
       )}
     </div>
   );

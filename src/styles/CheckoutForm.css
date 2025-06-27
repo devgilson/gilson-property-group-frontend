@@ -1,0 +1,64 @@
+.checkout-form {
+    max-width: 500px;
+    margin: 2rem auto;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 0 16px rgba(0, 0, 0, 0.08);
+    background-color: #ffffff;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.checkout-form label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 600;
+    font-size: 16px;
+    color: #333;
+}
+
+.checkout-form .StripeElement {
+    padding: 12px;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    margin-bottom: 16px;
+    font-size: 16px;
+}
+
+.checkout-form button {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.checkout-form button:hover {
+    background-color: #0056b3;
+}
+
+.checkout-form .error-message {
+    color: red;
+    margin-top: 8px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.card-icons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.card-icons img {
+    width: 48px;
+    height: auto;
+    opacity: 0.9;
+}
+

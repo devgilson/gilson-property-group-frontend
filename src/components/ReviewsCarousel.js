@@ -1,194 +1,120 @@
-import React, { useState } from 'react';
-import '../styles/ReviewsCarousel.css'; // Adjust the path as necessary
-import starFilled from '../assets/review/filledstar.png';
-import starHollow from '../assets/review/hollowstar.png';
+import React, { useState, useEffect } from 'react';
+import '../styles/ReviewsCarousel.css';
+import filledStar from '../assets/review/filledstar.png';
+import hollowStar from '../assets/review/hollowstar.png';
 import defaultAvatar from '../assets/review/image1.png';
 
 const ReviewsCarousel = () => {
+    const [reviews, setReviews] = useState([]);
     const [currentSlide, setCurrentSlide] = useState(0);
     const [selectedReview, setSelectedReview] = useState(null);
     const reviewsPerSlide = 3;
+    const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
 
-    const reviews = [
-        {
-            id: 1,
-            author: "Floyd M.",
-            text: "Amet minim mollit non deserunt ullamco est sit aliqua dolor do amet sint. Velit officia consequat duis enim velit mollit. Exercitation veniam consequat sunt nostrud amet. Amet minim mollit non deserunt ullamco est sit aliqua dolor do amet sint. Velit officia consequat duis enim velit mollit. Exercitation veniam consequat sunt nostrud amet. Amet minim mollit non deserunt ullamco est sit aliqua dolor do amet sint. Velit officia consequat duis enim velit mollit.",
-            rating: 5,
-            image: require('../assets/review/image1.png')
-        },
-        {
-            id: 2,
-            author: "Ronald R.",
-            text: "Ullamco est sit aliqua dolor do amet sint. Velit officia consequat duis enim velit mollit. Exercitation veniam consequat sunt nostrud amet.",
-            rating: 4,
-            image: require('../assets/review/image2.png')
-        },
-        {
-            id: 3,
-            author: "Savannah N.",
-            text: "Amet minim mollit non deserunt ullamco est sit aliqua dolor do amet sint. Velit officia consequat duis enim velit mollit. Exercitation veniam consequat sunt nostrud amet. Amet minim mollit non deserunt ullamco est sit aliqua dolor do amet sint. Velit officia consequat duis enim velit mollit.",
-            rating: 5,
-            image: require('../assets/review/image3.png')
-        }
-    ];
+    useEffect(() => {
+        const fetchReviews = async () => {
+            try {
+                const res = await fetch(`${apiBaseUrl}/properties/random?count=6`);
+                const data = await res.json();
+                setReviews(data || []);
+            } catch (err) {
+                console.error('Failed to fetch reviews', err);
+            }
+        };
+
+        fetchReviews();
+    }, []);
 
     const totalSlides = Math.ceil(reviews.length / reviewsPerSlide);
     const transformValue = `translateX(-${currentSlide * 100}%)`;
 
-    const goToSlide = (slideIndex) => {
-        setCurrentSlide(slideIndex);
-    };
-
-    const goToNextSlide = () => {
-        setCurrentSlide(prev => (prev === totalSlides - 1 ? 0 : prev + 1));
-    };
-
-    const goToPrevSlide = () => {
-        setCurrentSlide(prev => (prev === 0 ? totalSlides - 1 : prev - 1));
-    };
-
-    const handleReviewClick = (review) => {
-        setSelectedReview(review);
-    };
-
-    const closeExpandedView = () => {
-        setSelectedReview(null);
-    };
-
     const renderStars = (rating) => {
-        return [...Array(5)].map((_, i) => (
-            <img
-                key={i}
-                src={i < rating ? starFilled : starHollow}
-                alt={i < rating ? "Filled star" : "Hollow star"}
-                className="star-icon"
-            />
-        ));
+        const full = Math.floor(rating);
+        const empty = 5 - full;
+        return (
+            <>
+                {[...Array(full)].map((_, i) => (
+                    <img key={`f-${i}`} src={filledStar} alt="★" className="star-icon" />
+                ))}
+                {[...Array(empty)].map((_, i) => (
+                    <img key={`e-${i}`} src={hollowStar} alt="☆" className="star-icon" />
+                ))}
+            </>
+        );
+    };
+
+    const getSlides = () => {
+        const slides = [];
+        for (let i = 0; i < reviews.length; i += reviewsPerSlide) {
+            slides.push(reviews.slice(i, i + reviewsPerSlide));
+        }
+        return slides;
+    };
+
+    const truncateText = (text) => {
+        const maxLength = 260;
+        return text.length > maxLength ? text.slice(0, maxLength) + '…' : text;
     };
 
     return (
         <>
-            {/* This will blur the entire homepage when a review is selected */}
-            <div className={`homepage-blur ${selectedReview ? 'active' : ''}`}></div>
-
-            {/* Expanded Review Modal - positioned fixed over everything */}
             {selectedReview && (
-                <div className="expanded-review-modal">
-                    <div className="expanded-review-content">
-                        <div className="review-stars">
-                            {renderStars(selectedReview.rating)}
+                <div className="review-modal-overlay" onClick={() => setSelectedReview(null)}>
+                    <div className="review-modal-content" onClick={(e) => e.stopPropagation()}>
+                        <button className="close-button" onClick={() => setSelectedReview(null)}>×</button>
+                        <div className="review-modal-author">
+                            <img src={defaultAvatar} alt="avatar" />
+                            <div>airbnb Guest</div>
+                            <div className="review-stars">{renderStars(selectedReview.rating)}</div>
                         </div>
-                        <p className="review-text">{selectedReview.text}</p>
-                        <div className="review-divider"></div>
-                        <div className="review-footer">
-                            <img
-                                src={selectedReview.image || defaultAvatar}
-                                alt={selectedReview.author}
-                                className="review-avatar"
-                            />
-                            <h3 className="review-author">{selectedReview.author}</h3>
-                        </div>
-                        <button 
-                            className="close-review-button"
-                            onClick={() => setSelectedReview(null)}
-                        >
-                            Close
-                        </button>
+                        <p className="review-modal-text">{selectedReview.reviewText}</p>
                     </div>
                 </div>
             )}
 
-            {/* Original Carousel */}
-            <div className={`reviews-section ${selectedReview ? 'blurred' : ''}`}>
+            <section className="reviews-section">
                 <h2 className="reviews-title">What Our Guests Say</h2>
 
-                {selectedReview ? (
-                    <div className="expanded-review-overlay">
-                        <div className="expanded-review-container">
-                            <div className="expanded-review-card">
-                                <div className="review-stars">
-                                    {renderStars(selectedReview.rating)}
-                                </div>
-                                <p className="review-text">{selectedReview.text}</p>
-                                <div className="review-divider"></div>
-                                <div className="review-footer">
-                                    <img
-                                        src={selectedReview.image || defaultAvatar}
-                                        alt={selectedReview.author}
-                                        className="review-avatar"
-                                    />
-                                    <h3 className="review-author">{selectedReview.author}</h3>
-                                </div>
-                                <button
-                                    className="close-review-button"
-                                    onClick={closeExpandedView}
-                                >
-                                    Close
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <>
-                        <div className="reviews-carousel-container">
-                            <button
-                                className="carousel-button prev"
-                                onClick={goToPrevSlide}
-                                aria-label="Previous reviews"
-                            >
-                                &lt;
-                            </button>
-
-                            <div className="reviews-carousel">
-                                <div className="review-cards-wrapper" style={{ transform: transformValue }}>
-                                    {reviews.map((review) => (
-                                        <div
-                                            className="review-card"
-                                            key={review.id}
-                                            onClick={() => handleReviewClick(review)}
-                                        >
+                <div className="carousel-wrapper">
+                    <button className="carousel-btn left" onClick={() => setCurrentSlide((prev) => (prev === 0 ? totalSlides - 1 : prev - 1))}>{'<'}</button>
+                    <div className="carousel-container">
+                        <div className="carousel-track" style={{ transform: transformValue }}>
+                            {getSlides().map((group, index) => (
+                                <div className="carousel-slide" key={index}>
+                                    {group.map((review, i) => (
+                                        <div className="review-card" key={i}>
                                             <div className="review-header">
-                                                <img
-                                                    src={review.image || defaultAvatar}
-                                                    alt={review.author}
-                                                    className="review-avatar"
-                                                />
-                                                <div className="review-author-container">
-                                                    <h3 className="review-author">{review.author}</h3>
-                                                    <div className="review-stars">
-                                                        {renderStars(review.rating)}
-                                                    </div>
+                                                <img src={defaultAvatar} alt="avatar" />
+                                                <div>
+                                                    <div>airbnb Guest</div>
+                                                    <div className="review-stars">{renderStars(review.rating)}</div>
                                                 </div>
                                             </div>
-                                            <p className="review-text">{review.text}</p>
+                                            <div className="review-body">
+                                                <p>{truncateText(review.reviewText)}</p>
+                                                {review.reviewText.length > 260 && (
+                                                    <button className="read-more" onClick={() => setSelectedReview(review)}>Read more</button>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
-                            </div>
-
-                            <button
-                                className="carousel-button next"
-                                onClick={goToNextSlide}
-                                aria-label="Next reviews"
-                            >
-                                &gt;
-                            </button>
-                        </div>
-
-                        <div className="carousel-dots">
-                            {Array.from({ length: totalSlides }).map((_, index) => (
-                                <button
-                                    key={index}
-                                    className={`dot ${index === currentSlide ? 'active' : ''}`}
-                                    onClick={() => goToSlide(index)}
-                                    aria-label={`Go to slide ${index + 1}`}
-                                />
                             ))}
                         </div>
-                    </>
-                )}
-            </div>
+                    </div>
+                    <button className="carousel-btn right" onClick={() => setCurrentSlide((prev) => (prev + 1) % totalSlides)}>{'>'}</button>
+                </div>
+
+                <div className="carousel-dots">
+                    {Array.from({ length: totalSlides }).map((_, i) => (
+                        <button
+                            key={i}
+                            className={`dot ${currentSlide === i ? 'active' : ''}`}
+                            onClick={() => setCurrentSlide(i)}
+                        />
+                    ))}
+                </div>
+            </section>
         </>
     );
 };

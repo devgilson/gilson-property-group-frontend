@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import React, {useState, useEffect} from 'react';
+import {useParams, useNavigate, useSearchParams} from 'react-router-dom';
 import filledStar from '../assets/review/filledstar.png';
 import hollowStar from '../assets/review/hollowstar.png';
+import defaultAvatar from '../assets/review/image1.png';
 import '../styles/PropertyDetails.css';
 
-const StarRating = ({ rating, small = false }) => {
+const StarRating = ({rating, small = false}) => {
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 >= 0.5;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
@@ -12,16 +13,16 @@ const StarRating = ({ rating, small = false }) => {
     return (
         <div className={`star-rating ${small ? 'small' : ''}`}>
             {[...Array(fullStars)].map((_, i) => (
-                <img key={`full-${i}`} src={filledStar} alt="★" className="star" />
+                <img key={`full-${i}`} src={filledStar} alt="★" className="star"/>
             ))}
             {hasHalfStar && (
                 <div className="half-star-container">
-                    <img src={filledStar} alt="½" className="star half-filled" />
-                    <img src={hollowStar} alt="☆" className="star half-hollow" />
+                    <img src={filledStar} alt="½" className="star half-filled"/>
+                    <img src={hollowStar} alt="☆" className="star half-hollow"/>
                 </div>
             )}
             {[...Array(emptyStars)].map((_, i) => (
-                <img key={`empty-${i}`} src={hollowStar} alt="☆" className="star" />
+                <img key={`empty-${i}`} src={hollowStar} alt="☆" className="star"/>
             ))}
         </div>
     );
@@ -29,7 +30,7 @@ const StarRating = ({ rating, small = false }) => {
 
 const PropertyDetails = () => {
     const navigate = useNavigate();
-    const { id } = useParams();
+    const {id} = useParams();
     const [searchParams] = useSearchParams();
     const [property, setProperty] = useState(null);
     const [imageUrls, setImageUrls] = useState([]);
@@ -46,8 +47,6 @@ const PropertyDetails = () => {
     const [quoteError, setQuoteError] = useState(null);
     const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
 
-
-    // Get raw date strings and guest counts directly from URL
     const checkInStr = searchParams.get('checkIn');
     const checkOutStr = searchParams.get('checkOut');
     const adults = parseInt(searchParams.get('adults')) || 2;
@@ -55,7 +54,6 @@ const PropertyDetails = () => {
     const infants = parseInt(searchParams.get('infants')) || 0;
     const pets = parseInt(searchParams.get('pets')) || 0;
 
-    // Format date for display (works directly with YYYY-MM-DD strings)
     const formatDisplayDate = (dateStr) => {
         if (!dateStr) return '';
         if (dateStr.includes(',')) {
@@ -71,7 +69,6 @@ const PropertyDetails = () => {
         });
     };
 
-    // Calculate duration from string dates
     const calculateStayDuration = () => {
         if (!checkInStr || !checkOutStr) return 0;
         const start = new Date(checkInStr);
@@ -120,13 +117,11 @@ const PropertyDetails = () => {
 
             const responseData = await response.json();
 
-            // Updated validation check
             if (!responseData.data?.data?.financials) {
-                console.log('Received quote data structure:', responseData); // Debug
+                console.log('Received quote data structure:', responseData);
                 throw new Error('Invalid quote data structure');
             }
 
-            // Set the inner data object
             setQuoteData(responseData.data.data);
 
         } catch (err) {
@@ -181,7 +176,6 @@ const PropertyDetails = () => {
 
         fetchPropertyData();
     }, [id, checkInStr, checkOutStr]);
-
     const nextImage = () => {
         setImageLoaded(false);
         setCurrentImageIndex(prev => (prev + 1) % imageUrls.length);
@@ -251,7 +245,7 @@ const PropertyDetails = () => {
         });
     };
 
-    const PricingSection = ({ quote, nights }) => {
+    const PricingSection = ({quote, nights}) => {
         if (!quote) return null;
 
         return (
@@ -328,7 +322,6 @@ const PropertyDetails = () => {
                         </div>
                     </div>
                 </div>
-
                 <div className="price-summary">
                     {sub_total?.amount && (
                         <div className="price-row">
@@ -415,7 +408,7 @@ const PropertyDetails = () => {
                 </div>
 
                 <div className="property-rating">
-                    <StarRating rating={averageRating} />
+                    <StarRating rating={averageRating}/>
                     <span className="rating-text">
                         {averageRating.toFixed(1)} ({reviewCount} reviews)
                     </span>
@@ -438,7 +431,7 @@ const PropertyDetails = () => {
                                     e.target.src = '/placeholder-image.jpg';
                                     setImageLoaded(true);
                                 }}
-                                style={{ opacity: imageLoaded ? 1 : 0 }}
+                                style={{opacity: imageLoaded ? 1 : 0}}
                             />
 
                             {imageUrls.length > 1 && (
@@ -491,7 +484,6 @@ const PropertyDetails = () => {
                         <h2 className="section-title">About this property</h2>
                         <p>{property.summary || 'No description available'}</p>
                     </div>
-
                     {property.description && (
                         <div className="property-features" id="features-section">
                             <h2 className="section-title">Features</h2>

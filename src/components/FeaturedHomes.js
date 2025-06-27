@@ -15,10 +15,8 @@ const FeaturedHomes = () => {
         { id: 'resort', name: 'Resort' },
         { id: 'luxury', name: 'Luxury' },
         { id: 'independence', name: 'Independence' },
-        { id: '30day', name: '30 Day +' },
-        { id: 'northern', name: 'Northern Summit' },
-        { id: 'southpark', name: 'South Park' },
-        { id: 'michigan', name: 'Hometown Michigan' }
+        { id: 'michigan', name: 'Hometown Michigan' },
+        { id: '30day', name: '30 Day +' }
     ];
 
     useEffect(() => {
@@ -26,14 +24,11 @@ const FeaturedHomes = () => {
             try {
                 setLoading(true);
                 const response = await fetch(`${apiBaseUrl}/properties/featured/${activeTab.toLowerCase()}`);
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
                 const data = await response.json();
-                setProperties(data);
+                setProperties(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error('Error fetching featured properties:', error);
-                setProperties([]); // Set empty array on error
+                setProperties([]);
             } finally {
                 setLoading(false);
             }
@@ -50,22 +45,13 @@ const FeaturedHomes = () => {
         navigate(`/property/${propertyId}`);
     };
 
-    if (loading) {
-        return (
-            <div className="featured-homes">
-                <div className="loading-spinner"></div>
-                <p>Loading featured properties...</p>
-            </div>
-        );
-    }
-
     return (
         <div className="featured-homes">
             <h2 className="section-title">Featured Homes</h2>
 
             <div className="property-type-filter">
                 {propertyTypes.map((type) => (
-                    <button 
+                    <button
                         key={type.id}
                         className={`type-button ${activeTab === type.name ? 'active' : ''}`}
                         onClick={() => setActiveTab(type.name)}
@@ -77,48 +63,46 @@ const FeaturedHomes = () => {
 
             <div className="divider"></div>
 
-            {properties.length === 0 ? (
-                <div className="no-results">
-                    <p>No featured properties found for this category.</p>
-                </div>
+            {loading ? (
+                <div className="loading-spinner">Loading...</div>
+            ) : properties.length === 0 ? (
+                <p>No featured properties found for this category.</p>
             ) : (
                 <>
                     <div className="properties-grid">
                         {properties.map((property) => (
-                            <div 
-                                key={property.id || property.propertyId} 
+                            <div
+                                key={property.id || property.propertyId}
                                 className="property-card"
                                 onClick={() => handlePropertyClick(property.propertyId || property.id)}
                             >
-                                <img 
-                                    src={property.pictureUrl || 'https://via.placeholder.com/300x200?text=Property+Image'} 
-                                    alt={property.name} 
+                                <img
                                     className="property-image"
+                                    src={property.pictureUrl || 'https://via.placeholder.com/300x200?text=Image'}
+                                    alt={property.name}
                                     onError={(e) => {
                                         e.target.onerror = null;
-                                        e.target.src = 'https://via.placeholder.com/300x200?text=Property+Image';
+                                        e.target.src = 'https://via.placeholder.com/300x200?text=No+Image';
                                     }}
                                 />
                                 <div className="property-content">
                                     <h3 className="property-title">{property.name}</h3>
-                                    <p className="property-location">{property.city}, {property.state || property.region}</p>
-                                    <div className="property-specs">
-                                        <span>{property.bedrooms || 'N/A'} beds</span>
-                                        <span>{property.bathrooms || 'N/A'} baths</span>
-                                        {property.maxGuests && <span>Sleeps {property.maxGuests}</span>}
-                                    </div>
-                                    {property.pricePerNight && (
-                                        <div className="property-price">
-                                            ${property.pricePerNight} <span>/ night</span>
-                                        </div>
-                                    )}
+                                    <p className="property-details">
+                                        {(property.bedrooms || 'N/A')} Beds • {(property.bathrooms || 'N/A')} Baths
+                                    </p>
+                                    <p className="property-description">
+                                        {property.description
+                                            ? property.description.slice(0, 220) + '...'
+                                            : 'No description available.'}
+                                    </p>
+                                    <span style={{ marginTop: 'auto', textAlign: 'right', display: 'block' }}>→</span>
                                 </div>
                             </div>
                         ))}
                     </div>
 
                     <button className="view-all-button" onClick={handleViewAll}>
-                        View all {activeTab.toLowerCase() === 'all' ? 'homes' : activeTab + ' homes'}
+                        View all homes
                     </button>
                 </>
             )}

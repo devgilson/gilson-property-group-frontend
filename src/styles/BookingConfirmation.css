@@ -129,8 +129,6 @@ h2 {
 }
 
 .footer {
-  margin-top: 60px;
-  padding-top: 40px;
   border-top: 1px solid #eee;
 }
 
@@ -226,6 +224,35 @@ h2 {
 .no-addons {
   color: #666;
   font-style: italic;
+}
+
+.confirmation-success-icon {
+  background-color: #28a745;
+  padding: 20px;
+  border-radius: 50%;
+  width: fit-content;
+  margin: 0 auto 20px;
+}
+
+.confirmation-success-icon img {
+  width: 48px;
+  height: 48px;
+}
+
+.success-icon {
+  width: 48px;
+  height: 48px;
+  margin-right: 12px;
+  background-color: #2e7d32;
+  border-radius: 50%;
+  padding: 6px;
+}
+
+.auth-btn img {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  vertical-align: middle;
 }
 
 /* Responsive Adjustments */

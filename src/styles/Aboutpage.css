@@ -1,71 +1,220 @@
-/* aboutpage.css */
-@import url('variables.css');
-@import url('common-styles.css');
-
 .about-page {
-  font-family: var(--serif-font);
-  padding: 0;
-  margin: 0;
+  font-family: 'Libre Caslon Display', serif;
+  background-color: #F5ECE2;
+  color: #5C3B2E;
+  padding-top: 8rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  min-height: 100vh;
-  line-height: var(--body-line-height);
-  text-align: justify;
 }
 
+/* ===== Hero Section ===== */
 .about-hero-section {
   text-align: center;
-  margin-bottom: calc(var(--base-spacing) * 2.5);
-  margin-top: 8rem;
+  padding: 4rem 1rem;
 }
 
-.hero-content h1 {
-  font-family: var(--display-font);
+.about-hero-content h1 {
+  font-size: 4rem;
+  max-width: 1000px;
+  margin: 0 auto 2rem;
+  line-height: 1.1;
   font-weight: 400;
-  font-size: clamp(3rem, 8vw, 6rem);
-  line-height: 1;
-  text-align: center;
-  color: var(--text-color);
 }
 
-.hero-image {
-  width: 100%;
-  max-width: 800px;
-  height: auto;
-}
-
-.slideshow-caption {
-  font-size: var(--base-font-size);
-  color: var(--light-text);
-  margin-top: calc(var(--base-spacing) * 0.625);
-}
-
-.mission-section, 
-.core-values-section, 
-.meet-our-team-section, 
-.join-our-community-section, 
-.connect-with-us-section {
-  width: 80%;
+.about-hero-slideshow-wrapper {
+  max-width: 1000px;
   margin: 0 auto;
-  padding: calc(var(--base-spacing) * 2.5);
-  margin-bottom: calc(var(--base-spacing) * 2.5);
-  text-align: justify;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .mission-section,
-  .core-values-section,
-  .meet-our-team-section,
-  .join-our-community-section,
-  .connect-with-us-section {
-    width: 90%;
-    padding: var(--base-spacing);
+.about-hero-slideshow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.about-hero-image {
+  width: 100%;
+  max-height: 550px;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+.about-hero-slideshow button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: rgba(92, 59, 46, 0.8);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  height: 64px;
+  cursor: pointer;
+  z-index: 2;
+  font-size: 1.2rem;
+}
+
+.about-hero-slideshow button.prev {
+  left: 0;
+}
+
+.about-hero-slideshow button.next {
+  right: 0;
+}
+
+.about-hero-slideshow button:hover {
+  background-color: rgba(92, 59, 46, 1);
+}
+
+/* ===== Thumbnails ===== */
+.about-thumbnail-container {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 1rem;
+}
+
+.about-thumbnail {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  cursor: pointer;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: transform 0.3s, border-color 0.3s;
+}
+
+.about-thumbnail:hover {
+  transform: scale(1.05);
+}
+
+.about-thumbnail.active {
+  border-color: #5C3B2E;
+}
+
+/* ===== Sections ===== */
+.about-mission-section,
+.about-core-values-section,
+.about-meet-our-team-section,
+.about-join-our-community-section,
+.about-connect-with-us-section {
+  max-width: 1000px;
+  margin: 5rem auto;
+  padding: 0 1rem;
+  text-align: center;
+}
+
+.about-mission-section h2,
+.about-core-values-section h2,
+.about-meet-our-team-section h2,
+.about-join-our-community-section h2,
+.about-connect-with-us-section h2 {
+  font-size: 2.8rem;
+  margin-bottom: 1.5rem;
+}
+
+.about-mission-section p {
+  font-size: 1.2rem;
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+
+.about-core-values-section ul,
+.about-meet-our-team-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.about-core-values-section li,
+.about-meet-our-team-section li {
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+/* ===== Social Embeds ===== */
+.about-social-embed-grid {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.about-social-embed-grid iframe {
+  border: none;
+  width: 300px;
+  height: 400px;
+}
+
+/* ===== Connect Section - Single Column ===== */
+.about-connect-single-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  align-items: center;
+}
+
+.about-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+}
+
+.about-contact-item a {
+  color: #5C3B2E;
+  text-decoration: underline;
+}
+
+.about-social-title {
+  margin-top: 1rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.about-social-links-single {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.about-social-link-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.about-social-link-item a {
+  color: #5C3B2E;
+  text-decoration: underline;
+}
+
+/* ===== Icons ===== */
+.icon {
+  font-size: 1.2rem;
+}
+
+/* ===== Responsive ===== */
+@media screen and (max-width: 500px) {
+  .about-hero-content h1 {
+    font-size: 2.2rem;
   }
-  
-  .hero-content h1 {
-    font-size: clamp(2rem, 6vw, 3rem);
+
+  .about-connect-with-us-section h2 {
+    font-size: 2.2rem;
+  }
+
+  .about-contact-item,
+  .about-social-link-item {
+    font-size: 1rem;
+  }
+
+  .about-thumbnail {
+    width: 60px;
+    height: 40px;
   }
 }

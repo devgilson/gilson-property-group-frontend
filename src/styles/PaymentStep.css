@@ -1,0 +1,94 @@
+.payment-step {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    font-family: 'Arial', sans-serif;
+}
+
+.payment-step h2 {
+    font-size: 24px;
+    margin-bottom: 1.5rem;
+    color: #333;
+    text-align: center;
+}
+
+.summary-box {
+    background-color: #f7f9fc;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 16px;
+    color: #333;
+}
+
+.payment-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #444;
+}
+
+#card-element {
+    background: #fff;
+    padding: 12px 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-size: 16px;
+}
+
+.payment-error {
+    color: #d32f2f;
+    background: #ffebee;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin: 1rem 0;
+    font-size: 14px;
+}
+
+.payment-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+}
+
+.back-btn,
+.pay-btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.back-btn {
+    background-color: #ccc;
+    color: #333;
+}
+
+.pay-btn {
+    background-color: #2e7d32;
+    color: white;
+}
+
+.back-btn:disabled,
+.pay-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+    .payment-actions {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .back-btn,
+    .pay-btn {
+        width: 100%;
+    }
+}

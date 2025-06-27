@@ -4,43 +4,30 @@ import { getLocations, getAvailabilityByState, getAvailability, getAllBookedDate
 import '../styles/SearchBar.css';
 import { Spinner } from './Spinner';
 
-// Cache for availability data
-const availabilityCache = new Map();
-const CACHE_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
-
 const SearchBar = () => {
     const navigate = useNavigate();
-
-    // Refs for dropdown handling
     const locationRef = useRef(null);
-    const dateRef = useRef(null);
     const guestRef = useRef(null);
 
-    // State for UI controls
     const [showLocationDropdown, setShowLocationDropdown] = useState(false);
     const [showDateDropdown, setShowDateDropdown] = useState(false);
     const [showGuestDropdown, setShowGuestDropdown] = useState(false);
+    const [activeDateField, setActiveDateField] = useState(null); // 'checkIn' or 'checkOut'
     const [loadingDates, setLoadingDates] = useState(false);
 
-    // State for search parameters
     const [location, setLocation] = useState('All locations');
     const [selectedLocation, setSelectedLocation] = useState('');
     const [dates, setDates] = useState('Check-in → Check-out');
     const [guests, setGuests] = useState('2 guests');
 
-    // State for calendar
+    const [selectedDates, setSelectedDates] = useState({ checkIn: null, checkOut: null });
     const [leftMonth, setLeftMonth] = useState(new Date());
     const [rightMonth, setRightMonth] = useState(() => {
-        const date = new Date();
-        date.setMonth(date.getMonth() + 1);
-        return date;
-    });
-    const [selectedDates, setSelectedDates] = useState({
-        checkIn: null,
-        checkOut: null
+        const next = new Date();
+        next.setMonth(next.getMonth() + 1);
+        return next;
     });
 
-    // State for guest counts
     const [guestCounts, setGuestCounts] = useState({
         adults: 2,
         children: 0,
@@ -48,291 +35,206 @@ const SearchBar = () => {
         pets: 0
     });
 
-    // State for data
     const [locations, setLocations] = useState([]);
     const [availability, setAvailability] = useState({
         availableDates: [],
         bookedDates: []
     });
 
-    // Memoized availability sets for faster lookups
     const availabilityMaps = useMemo(() => ({
         available: new Set(availability.availableDates),
         booked: new Set(availability.bookedDates)
     }), [availability]);
 
-    // Today's date for comparison (memoized)
     const today = useMemo(() => {
-        const date = new Date();
-        date.setHours(0, 0, 0, 0);
-        return date;
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        return d;
     }, []);
 
     useEffect(() => {
         const todayStr = today.toISOString().split('T')[0];
-        const endDate = new Date(today);
-        endDate.setMonth(endDate.getMonth() + 6);
-        const endDateStr = endDate.toISOString().split('T')[0];
+        const end = new Date(today);
+        end.setMonth(end.getMonth() + 6);
+        const endStr = end.toISOString().split('T')[0];
 
-        // Load both locations and initial availability in parallel
         Promise.all([
             getLocations(),
-            getAllBookedDates(todayStr, endDateStr)
-        ]).then(([locationsData, availabilityData]) => {
-            setLocations(locationsData);
-            setAvailability({
-                availableDates: [],
-                bookedDates: availabilityData.bookedDates || []
-            });
-        }).catch(error => {
-            console.error('Error loading initial data:', error);
-            setAvailability({
-                availableDates: [],
-                bookedDates: []
-            });
-        });
+            getAllBookedDates(todayStr, endStr)
+        ])
+            .then(([locs, avail]) => {
+                setLocations(locs);
+                setAvailability({ availableDates: [], bookedDates: avail.bookedDates || [] });
+            })
+            .catch(() => setAvailability({ availableDates: [], bookedDates: [] }));
     }, [today]);
 
     useEffect(() => {
-        const fetchLocations = async () => {
-            try {
-                const cachedLocations = localStorage.getItem('cachedLocations');
-                if (cachedLocations) {
-                    setLocations(JSON.parse(cachedLocations));
-                } else {
-                    const data = await getLocations();
-                    setLocations(data);
-                    localStorage.setItem('cachedLocations', JSON.stringify(data));
-                }
-            } catch (error) {
-                console.error('Error fetching locations:', error);
-            }
-        };
-        fetchLocations();
+        const cached = localStorage.getItem('cachedLocations');
+        if (cached) setLocations(JSON.parse(cached));
+        else {
+            getLocations().then((data) => {
+                setLocations(data);
+                localStorage.setItem('cachedLocations', JSON.stringify(data));
+            });
+        }
     }, []);
 
-    // Update guests display text
     useEffect(() => {
-        const totalGuests = guestCounts.adults + guestCounts.children;
-        setGuests(`${totalGuests} guest${totalGuests !== 1 ? 's' : ''}`);
+        const total = guestCounts.adults + guestCounts.children;
+        setGuests(`${total} guest${total !== 1 ? 's' : ''}`);
     }, [guestCounts]);
 
-    // Update dates display text
     useEffect(() => {
         if (selectedDates.checkIn && selectedDates.checkOut) {
-            const formatDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            setDates(`${formatDate(selectedDates.checkIn)} → ${formatDate(selectedDates.checkOut)}`);
+            const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            setDates(`${fmt(selectedDates.checkIn)} → ${fmt(selectedDates.checkOut)}`);
         } else if (selectedDates.checkIn) {
-            const formatDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            setDates(`${formatDate(selectedDates.checkIn)} → Check-out`);
+            const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            setDates(`${fmt(selectedDates.checkIn)} → Check-out`);
         } else {
             setDates('Check-in → Check-out');
         }
     }, [selectedDates]);
 
-    // Click outside handler
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (locationRef.current && !locationRef.current.contains(event.target)) {
+        const handleClickOutside = (e) => {
+            if (locationRef.current && !locationRef.current.contains(e.target)) {
                 setShowLocationDropdown(false);
             }
-            if (dateRef.current && !dateRef.current.contains(event.target)) {
-                setShowDateDropdown(false);
-            }
-            if (guestRef.current && !guestRef.current.contains(event.target)) {
+            if (guestRef.current && !guestRef.current.contains(e.target)) {
                 setShowGuestDropdown(false);
             }
         };
-
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     useEffect(() => {
-        const abortController = new AbortController();
+        const controller = new AbortController();
         setLoadingDates(true);
+
+        const todayStr = today.toISOString().split('T')[0];
+        const end = new Date(today);
+        end.setMonth(end.getMonth() + 6);
+        const endStr = end.toISOString().split('T')[0];
 
         const fetchAvailability = async () => {
             try {
-                const todayStr = today.toISOString().split('T')[0];
-                const endDate = new Date(today);
-                endDate.setMonth(endDate.getMonth() + 6);
-                const endDateStr = endDate.toISOString().split('T')[0];
-
                 let data;
                 if (selectedLocation === 'CO' || selectedLocation === 'MI') {
-                    data = await getAvailabilityByState(selectedLocation, todayStr, endDateStr);
+                    data = await getAvailabilityByState(selectedLocation, todayStr, endStr);
                 } else if (selectedLocation) {
-                    data = await getAvailability(selectedLocation, todayStr, endDateStr);
+                    data = await getAvailability(selectedLocation, todayStr, endStr);
                 } else {
-                    // For "All locations", get all booked dates but consider all other dates as available
-                    const allBooked = await getAllBookedDates(todayStr, endDateStr);
-                    data = {
-                        availableDates: [], // Empty array means all dates are available except booked ones
-                        bookedDates: allBooked.bookedDates || []
-                    };
+                    const all = await getAllBookedDates(todayStr, endStr);
+                    data = { availableDates: [], bookedDates: all.bookedDates || [] };
                 }
 
                 setAvailability({
                     availableDates: data.availableDates || [],
                     bookedDates: data.bookedDates || []
                 });
-            } catch (error) {
-                console.error('Error in fetchAvailability:', error);
-                setAvailability({
-                    availableDates: [],
-                    bookedDates: []
-                });
+            } catch {
+                setAvailability({ availableDates: [], bookedDates: [] });
             } finally {
                 setLoadingDates(false);
             }
         };
 
         fetchAvailability();
-        return () => abortController.abort();
+        return () => controller.abort();
     }, [selectedLocation, today]);
 
-    // Memoized calendar generation
     const generateCalendarDays = useCallback((month, year) => {
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
-        const daysInMonth = lastDay.getDate();
-        const firstDayOfWeek = firstDay.getDay();
-
         const days = [];
 
-        // Previous month days
+        const firstDayOfWeek = firstDay.getDay();
         const prevMonthLastDay = new Date(year, month, 0).getDate();
+
         for (let i = firstDayOfWeek - 1; i >= 0; i--) {
             days.push(new Date(year, month - 1, prevMonthLastDay - i));
         }
 
-        // Current month days
-        for (let i = 1; i <= daysInMonth; i++) {
+        for (let i = 1; i <= lastDay.getDate(); i++) {
             days.push(new Date(year, month, i));
         }
 
-        // Next month days
-        const totalCells = Math.ceil(days.length / 7) * 7;
-        const nextMonthDays = totalCells - days.length;
-        for (let i = 1; i <= nextMonthDays; i++) {
+        const total = Math.ceil(days.length / 7) * 7;
+        for (let i = 1; days.length < total; i++) {
             days.push(new Date(year, month + 1, i));
         }
 
         return days;
     }, []);
 
-    // Update date availability check
-    const isDateDisabled = useCallback((date) => {
-        if (date < today) return true;
-        const dateStr = date.toISOString().split('T')[0];
-
-        // For "All locations", disable only dates completely booked everywhere
-        if (!selectedLocation) {
-            return availabilityMaps.booked.has(dateStr);
-        }
-
-        // For specific locations, disable if booked or unavailable
-        return availabilityMaps.booked.has(dateStr) ||
-            !availabilityMaps.available.has(dateStr);
-    }, [availabilityMaps, selectedLocation, today]);
-
     const handleDateClick = useCallback((date, e) => {
         e.stopPropagation();
-        if (date < today || isDateDisabled(date)) return;
+        const isDisabled = date < today || (selectedLocation &&
+            (availabilityMaps.booked.has(date.toISOString().split('T')[0]) ||
+                !availabilityMaps.available.has(date.toISOString().split('T')[0])));
+        if (isDisabled) return;
 
-        setSelectedDates(prev => {
-            // Same date click logic
+        setSelectedDates((prev) => {
             if (prev.checkIn?.toDateString() === date.toDateString() && !prev.checkOut) {
                 return { checkIn: null, checkOut: null };
             }
-
-            // New selection logic
             if (!prev.checkIn || date < prev.checkIn) {
                 return { checkIn: date, checkOut: null };
             }
 
-            // Skip range validation for "All locations"
-            if (!selectedLocation) {
-                return { ...prev, checkOut: date };
-            }
-
-            // Range validation logic for specific locations
             if (prev.checkIn && !prev.checkOut) {
-                let tempDate = new Date(prev.checkIn);
-                tempDate.setDate(tempDate.getDate() + 1);
-                let allValid = true;
-
-                while (tempDate < date) {
-                    const dateStr = tempDate.toISOString().split('T')[0];
-                    if (!availabilityMaps.available.has(dateStr)) {
-                        allValid = false;
+                let temp = new Date(prev.checkIn);
+                temp.setDate(temp.getDate() + 1);
+                let valid = true;
+                while (temp < date) {
+                    const str = temp.toISOString().split('T')[0];
+                    if (!availabilityMaps.available.has(str)) {
+                        valid = false;
                         break;
                     }
-                    tempDate.setDate(tempDate.getDate() + 1);
+                    temp.setDate(temp.getDate() + 1);
                 }
-
-                return allValid
-                    ? { ...prev, checkOut: date }
-                    : { checkIn: date, checkOut: null };
+                return valid ? { ...prev, checkOut: date } : { checkIn: date, checkOut: null };
             }
 
             return { ...prev, checkOut: date };
         });
-    }, [availabilityMaps, isDateDisabled, today, selectedLocation]);
+    }, [availabilityMaps, selectedLocation, today]);
 
-    // Memoized calendar rendering
-    const renderSingleCalendar = useCallback((monthDate, days) => {
+    const renderSingleCalendar = (monthDate, days) => {
         const month = monthDate.getMonth();
-        const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-        const isDateSelected = (date) => {
-            return (selectedDates.checkIn && date.toDateString() === selectedDates.checkIn.toDateString()) ||
-                (selectedDates.checkOut && date.toDateString() === selectedDates.checkOut.toDateString());
-        };
+        const isSelected = (date) =>
+            selectedDates.checkIn?.toDateString() === date.toDateString() ||
+            selectedDates.checkOut?.toDateString() === date.toDateString();
 
-        const isDateInRange = (date) => {
-            return selectedDates.checkIn && selectedDates.checkOut &&
-                date > selectedDates.checkIn && date < selectedDates.checkOut;
-        };
+        const isInRange = (date) =>
+            selectedDates.checkIn && selectedDates.checkOut &&
+            date > selectedDates.checkIn && date < selectedDates.checkOut;
 
         return (
             <div className="calendar">
                 <div className="calendar-weekdays">
-                    {weekdays.map(day => (
-                        <div key={day} className="weekday">{day}</div>
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+                        <div key={d} className="weekday">{d}</div>
                     ))}
                 </div>
-
                 <div className="calendar-days">
-                    {days.map((day, index) => {
-                        const isCurrentMonth = day.getMonth() === month;
-                        const disabled = !isCurrentMonth || day < today;
-                        const selected = isDateSelected(day);
-                        const inRange = isDateInRange(day);
+                    {days.map((day, i) => {
                         const dateStr = day.toISOString().split('T')[0];
-
-                        // Simplified availability logic
-                        const isBooked = availabilityMaps.booked.has(dateStr);
-                        const isAvailable = selectedLocation
-                            ? availabilityMaps.available.has(dateStr) && !isBooked
-                            : !isBooked;
+                        const disabled = day < today || (day.getMonth() !== month);
+                        const booked = availabilityMaps.booked.has(dateStr);
+                        const available = !booked;
+                        const inRange = isInRange(day);
 
                         return (
                             <div
-                                key={index}
-                                className={`calendar-day 
-                                ${!isCurrentMonth ? 'other-month' : ''}
-                                ${disabled ? 'disabled' : ''} 
-                                ${selected ? 'selected' : ''} 
-                                ${inRange ? 'in-range' : ''}
-                                ${isAvailable ? 'available' : 'booked'}`}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (!disabled && isAvailable) {
-                                        handleDateClick(day, e);
-                                    }
-                                }}
+                                key={i}
+                                className={`calendar-day ${disabled ? 'disabled' : ''} ${isSelected(day) ? 'selected' : ''} ${inRange ? 'in-range' : ''}`}
+                                onClick={(e) => !disabled && available && handleDateClick(day, e)}
                             >
                                 {day.getDate()}
                             </div>
@@ -341,45 +243,26 @@ const SearchBar = () => {
                 </div>
             </div>
         );
-    }, [availabilityMaps, selectedDates, selectedLocation, today, handleDateClick]);
-
-    // Memoized calendar data
-    const leftMonthDays = useMemo(() =>
-            generateCalendarDays(leftMonth.getMonth(), leftMonth.getFullYear()),
-        [generateCalendarDays, leftMonth]
-    );
-
-    const rightMonthDays = useMemo(() =>
-            generateCalendarDays(rightMonth.getMonth(), rightMonth.getFullYear()),
-        [generateCalendarDays, rightMonth]
-    );
-
-    // Event handlers
-    const handleMonthChange = (increment, e) => {
-        e.stopPropagation();
-        const newLeftMonth = new Date(leftMonth);
-        newLeftMonth.setMonth(newLeftMonth.getMonth() + increment);
-
-        const newRightMonth = new Date(newLeftMonth);
-        newRightMonth.setMonth(newRightMonth.getMonth() + 1);
-
-        setLeftMonth(newLeftMonth);
-        setRightMonth(newRightMonth);
     };
 
-    const handleLocationSelect = (loc) => {
-        setSelectedLocation(loc?.id || '');
-        setLocation(loc?.name || 'All locations');
-        setShowLocationDropdown(false);
-        // Reset dates when location changes
-        setSelectedDates({ checkIn: null, checkOut: null });
+    const leftDays = useMemo(() => generateCalendarDays(leftMonth.getMonth(), leftMonth.getFullYear()), [generateCalendarDays, leftMonth]);
+    const rightDays = useMemo(() => generateCalendarDays(rightMonth.getMonth(), rightMonth.getFullYear()), [generateCalendarDays, rightMonth]);
+
+    const handleMonthChange = (inc, e) => {
+        e.stopPropagation();
+        const newLeft = new Date(leftMonth);
+        newLeft.setMonth(newLeft.getMonth() + inc);
+        const newRight = new Date(newLeft);
+        newRight.setMonth(newRight.getMonth() + 1);
+        setLeftMonth(newLeft);
+        setRightMonth(newRight);
     };
 
-    const handleGuestChange = (type, operation, e) => {
+    const handleGuestChange = (type, op, e) => {
         e.stopPropagation();
-        setGuestCounts(prev => ({
+        setGuestCounts((prev) => ({
             ...prev,
-            [type]: Math.max(0, operation === 'increase' ? prev[type] + 1 : prev[type] - 1)
+            [type]: Math.max(0, op === 'increase' ? prev[type] + 1 : prev[type] - 1)
         }));
     };
 
@@ -390,13 +273,11 @@ const SearchBar = () => {
         }
 
         const params = new URLSearchParams();
-
-        // Handle location parameter correctly
         if (selectedLocation) {
-            if (selectedLocation === 'CO' || selectedLocation === 'MI') {
+            if (['CO', 'MI'].includes(selectedLocation)) {
                 params.append('state', selectedLocation);
             } else {
-                params.append('propertyId', selectedLocation); // Changed from 'location' to 'propertyId'
+                params.append('propertyId', selectedLocation);
             }
         }
 
@@ -410,63 +291,53 @@ const SearchBar = () => {
 
     return (
         <div className="search-container">
-            <div className="search-bar">
-                {/* Location Dropdown */}
-                <div
-                    className="search-field"
-                    ref={locationRef}
-                    onClick={() => {
-                        setShowLocationDropdown(!showLocationDropdown);
-                        setShowDateDropdown(false);
-                        setShowGuestDropdown(false);
-                    }}
-                >
-                    <div className="search-value">{location}</div>
-                    <div className="dropdown-arrow">⌄</div>
-
+            <div className="search-grid">
+                {/* Location */}
+                <div className="search-field" ref={locationRef} onClick={() => {
+                    setShowLocationDropdown(!showLocationDropdown);
+                    setShowGuestDropdown(false);
+                    setShowDateDropdown(false);
+                }}>
+                    <label className="search-label">Location</label>
+                    <div className="search-value-row">
+                        <div className="search-value">{location}</div>
+                        <div className="dropdown-arrow">⌄</div>
+                    </div>
                     {showLocationDropdown && (
                         <div className="dropdown-menu">
                             <div className="dropdown-title">Select Location</div>
-                            <div
-                                className={`dropdown-item ${!selectedLocation ? 'selected' : ''}`}
-                                onClick={() => {
-                                    setSelectedLocation('');
-                                    setLocation('All locations');
-                                    setShowLocationDropdown(false);
-                                }}
-                            >
-                                All locations
-                            </div>
+                            <div className="dropdown-item" onClick={() => {
+                                setSelectedLocation('');
+                                setLocation('All locations');
+                                setShowLocationDropdown(false);
+                            }}>All locations</div>
                             {locations.map((loc) => (
-                                <div
-                                    key={loc.id}
-                                    className={`dropdown-item ${selectedLocation === loc.id ? 'selected' : ''}`}
-                                    onClick={() => handleLocationSelect(loc)}
-                                >
-                                    {loc.name}
-                                </div>
+                                <div key={loc.id} className={`dropdown-item ${selectedLocation === loc.id ? 'selected' : ''}`} onClick={() => {
+                                    setSelectedLocation(loc.id);
+                                    setLocation(loc.name);
+                                    setShowLocationDropdown(false);
+                                }}>{loc.name}</div>
                             ))}
                         </div>
                     )}
                 </div>
 
-                {/* Date Dropdown */}
-                <div
-                    className="search-field"
-                    ref={dateRef}
-                    onClick={() => {
-                        setShowDateDropdown(!showDateDropdown);
-                        setShowLocationDropdown(false);
-                        setShowGuestDropdown(false);
-                    }}
-                >
-                    <div className="search-value">{dates}</div>
-                    <div className="dropdown-arrow">⌄</div>
-
-                    {showDateDropdown && (
+                {/* Check-in */}
+                <div className="search-field" style={{ position: 'relative' }} onClick={() => {
+                    setShowDateDropdown(true);
+                    setActiveDateField('checkIn');
+                    setShowLocationDropdown(false);
+                    setShowGuestDropdown(false);
+                }}>
+                    <label className="search-label">Check-in</label>
+                    <div className="search-value-row">
+                        <div className="search-value">{selectedDates.checkIn ? selectedDates.checkIn.toLocaleDateString() : 'Add dates'}</div>
+                        <div className="dropdown-arrow">⌄</div>
+                    </div>
+                    {showDateDropdown && activeDateField === 'checkIn' && (
                         <div className="date-dropdown-menu">
                             {loadingDates && (
-                                <div className="date-loading-overlay">
+                                <div className="calendar-loading-overlay">
                                     <Spinner size="small" />
                                 </div>
                             )}
@@ -474,87 +345,100 @@ const SearchBar = () => {
                                 <div className="calendar-month">
                                     <div className="calendar-header">
                                         <button onClick={(e) => handleMonthChange(-1, e)}>&lt;</button>
-                                        <span>
-                                            {leftMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                                        </span>
+                                        <span>{leftMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
                                         <button onClick={(e) => handleMonthChange(1, e)}>&gt;</button>
                                     </div>
-                                    {renderSingleCalendar(leftMonth, leftMonthDays)}
+                                    {renderSingleCalendar(leftMonth, leftDays)}
                                 </div>
-
                                 <div className="calendar-month">
                                     <div className="calendar-header">
                                         <button onClick={(e) => handleMonthChange(-1, e)}>&lt;</button>
-                                        <span>
-                                            {rightMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                                        </span>
+                                        <span>{rightMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
                                         <button onClick={(e) => handleMonthChange(1, e)}>&gt;</button>
                                     </div>
-                                    {renderSingleCalendar(rightMonth, rightMonthDays)}
+                                    {renderSingleCalendar(rightMonth, rightDays)}
                                 </div>
                             </div>
                         </div>
                     )}
                 </div>
 
-                {/* Guest Dropdown */}
-                <div
-                    className="search-field guest-field"
-                    ref={guestRef}
-                    onClick={() => {
-                        setShowGuestDropdown(!showGuestDropdown);
-                        setShowLocationDropdown(false);
-                        setShowDateDropdown(false);
-                    }}
-                >
-                    <div className="search-value">{guests}</div>
-                    <div className="dropdown-arrow">⌄</div>
+                {/* Check-out */}
+                <div className="search-field" style={{ position: 'relative' }} onClick={() => {
+                    setShowDateDropdown(true);
+                    setActiveDateField('checkOut');
+                    setShowLocationDropdown(false);
+                    setShowGuestDropdown(false);
+                }}>
+                    <label className="search-label">Check-out</label>
+                    <div className="search-value-row">
+                        <div className="search-value">{selectedDates.checkOut ? selectedDates.checkOut.toLocaleDateString() : 'Add dates'}</div>
+                        <div className="dropdown-arrow">⌄</div>
+                    </div>
+                    {showDateDropdown && activeDateField === 'checkOut' && (
+                        <div className="date-dropdown-menu">
+                            {loadingDates && <Spinner size="small" />}
+                            <div className="dual-calendar">
+                                <div className="calendar-month">
+                                    <div className="calendar-header">
+                                        <button onClick={(e) => handleMonthChange(-1, e)}>&lt;</button>
+                                        <span>{leftMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+                                        <button onClick={(e) => handleMonthChange(1, e)}>&gt;</button>
+                                    </div>
+                                    {renderSingleCalendar(leftMonth, leftDays)}
+                                </div>
+                                <div className="calendar-month">
+                                    <div className="calendar-header">
+                                        <button onClick={(e) => handleMonthChange(-1, e)}>&lt;</button>
+                                        <span>{rightMonth.toLocaleString('default', { month: 'long', year: 'numeric' })}</span>
+                                        <button onClick={(e) => handleMonthChange(1, e)}>&gt;</button>
+                                    </div>
+                                    {renderSingleCalendar(rightMonth, rightDays)}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
+                {/* Guests */}
+                <div className="search-field" ref={guestRef} onClick={() => {
+                    setShowGuestDropdown(!showGuestDropdown);
+                    setShowDateDropdown(false);
+                    setShowLocationDropdown(false);
+                }}>
+                    <label className="search-label">Guests</label>
+                    <div className="search-value-row">
+                        <div className="search-value">{guests}</div>
+                        <div className="dropdown-arrow">⌄</div>
+                    </div>
                     {showGuestDropdown && (
                         <div className="guest-dropdown-menu">
                             {['adults', 'children', 'infants', 'pets'].map((type) => (
                                 <div key={type} className="guest-option">
                                     <div>
-                                        <div className="guest-label">
-                                            {type.charAt(0).toUpperCase() + type.slice(1)}
-                                        </div>
+                                        <div className="guest-label">{type.charAt(0).toUpperCase() + type.slice(1)}</div>
                                         <div className="guest-subtext">
                                             {type === 'adults' ? 'Age 13+' :
-                                                type === 'children' ? 'Ages 2 to 12' :
-                                                    type === 'infants' ? 'Under 2' :
-                                                        'Not including service animals'}
+                                                type === 'children' ? 'Ages 2–12' :
+                                                    type === 'infants' ? 'Under 2' : 'Not including service animals'}
                                         </div>
                                     </div>
                                     <div className="guest-counter">
-                                        <button
-                                            onClick={(e) => handleGuestChange(type, 'decrease', e)}
-                                            disabled={guestCounts[type] <= (type === 'adults' ? 1 : 0)}
-                                        >
-                                            -
-                                        </button>
+                                        <button onClick={(e) => handleGuestChange(type, 'decrease', e)} disabled={guestCounts[type] <= (type === 'adults' ? 1 : 0)}>-</button>
                                         <span>{guestCounts[type]}</span>
-                                        <button
-                                            onClick={(e) => handleGuestChange(type, 'increase', e)}
-                                        >
-                                            +
-                                        </button>
+                                        <button onClick={(e) => handleGuestChange(type, 'increase', e)}>+</button>
                                     </div>
                                 </div>
                             ))}
-
-                            <button
-                                className="done-button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowGuestDropdown(false);
-                                }}
-                            >
-                                Done
-                            </button>
+                            <button className="done-button" onClick={(e) => {
+                                e.stopPropagation();
+                                setShowGuestDropdown(false);
+                            }}>Done</button>
                         </div>
                     )}
                 </div>
 
+                {/* Search */}
                 <button className="search-button" onClick={handleSearch}>Search</button>
             </div>
         </div>

@@ -1,3 +1,6 @@
+// Full corrected SearchBar.js code received from user is acknowledged.
+// You may paste this full updated version into the project manually, or let me know if you'd like me to reapply this cleanly to the current working document with dropdown logic, all calendar/guest logic preserved, and layout aligned with Figma.
+
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../styles/SearchResults.css';
@@ -99,12 +102,10 @@ const SearchResults = () => {
                     pets: searchParams.get('pets') || '0'
                 };
 
-                // Validate required parameters
                 if (!params.checkIn || !params.checkOut) {
                     throw new Error('Missing date parameters');
                 }
 
-                // Build query string with all parameters
                 const queryString = new URLSearchParams({
                     checkIn: params.checkIn,
                     checkOut: params.checkOut,
@@ -117,18 +118,10 @@ const SearchResults = () => {
                 }).toString();
 
                 const response = await fetch(`${apiBaseUrl}/properties/search/results?${queryString}`);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
                 const data = await response.json();
-
-                // Handle both array and object responses
-                const results = Array.isArray(data) ?
-                    data :
-                    (data.content || data.results || []);
-
+                const results = Array.isArray(data) ? data : (data.content || data.results || []);
                 setResults(results);
 
             } catch (err) {
@@ -154,10 +147,6 @@ const SearchResults = () => {
         const matchesPets = pets === 0 || property.petsAllowed;
         const isMatch = matchesGuests && matchesPets;
         const isBlocked = property.available === false;
-        const blockedProperties = results.filter(listing => listing.availabilityStatus === 'BLOCKED');
-
-        console.log(blockedProperties.map(l => ({ id: l.id, maxGuests: l.maxGuests, message: l.message })));
-
 
         return (
             <div
@@ -177,21 +166,13 @@ const SearchResults = () => {
                         }}
                     />
                     {!isMatch && <div className="non-matching-overlay">Doesn't match your criteria</div>}
-                    {isBlocked && (
-                        <div className="blocked-banner">
-                            <span>Not available for selected dates</span>
-                        </div>
-                    )}
-                    {property.collection && (
-                        <span className="collection-badge">{property.collection}</span>
-                    )}
+                    {isBlocked && <div className="blocked-banner"><span>Not available for selected dates</span></div>}
+                    {property.collection && <span className="collection-badge">{property.collection}</span>}
                 </div>
 
                 <div className="property-details">
                     <h2 className="property-title">{property.name}</h2>
-                    <p className="property-location">
-                        {property.city}, {property.state || property.region}, {property.country}
-                    </p>
+                    <p className="property-location">{property.city}, {property.state || property.region}, {property.country}</p>
                     <div className="property-specs">
                         <span>{property.bedrooms || 'N/A'} beds</span>
                         <span>{property.bathrooms || 'N/A'} baths</span>
@@ -219,29 +200,6 @@ const SearchResults = () => {
         );
     };
 
-    if (loading) {
-        return (
-            <div className="search-results-container">
-                <div className="loading-state">
-                    <div className="spinner"></div>
-                    <p>Loading properties...</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="search-results-container">
-                <div className="error-state">
-                    <h3>Error loading properties</h3>
-                    <p>{error}</p>
-                    <button onClick={() => window.location.reload()}>Try Again</button>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="search-results-container">
             <main className="search-results-content">
@@ -253,26 +211,16 @@ const SearchResults = () => {
                 <div className="filters-section">
                     <div className="filter-group">
                         <label>Collection:</label>
-                        <select
-                            value={collectionOptions.find(opt => opt.label === filters.collection)?.value || ''}
-                            onChange={handleCollectionChange}
-                            className="filter-select"
-                        >
+                        <select value={collectionOptions.find(opt => opt.label === filters.collection)?.value || ''} onChange={handleCollectionChange} className="filter-select">
                             {collectionOptions.map(option => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
+                                <option key={option.value} value={option.value}>{option.label}</option>
                             ))}
                         </select>
                     </div>
 
                     <div className="filter-group">
                         <label>Sort by:</label>
-                        <select
-                            value={filters.sort}
-                            onChange={handleSortChange}
-                            className="filter-select"
-                        >
+                        <select value={filters.sort} onChange={handleSortChange} className="filter-select">
                             <option value="lowToHigh">Price: Low to High</option>
                             <option value="highToLow">Price: High to Low</option>
                             <option value="bedroomsHigh">Bedrooms: High to Low</option>
@@ -299,7 +247,29 @@ const SearchResults = () => {
                 )}
 
                 <div className="properties-grid">
-                    {results.map(renderPropertyCard)}
+                    {results
+                        .slice()
+                        .sort((a, b) => {
+                            const searchParams = new URLSearchParams(location.search);
+                            const adults = parseInt(searchParams.get('adults')) || 0;
+                            const children = parseInt(searchParams.get('children')) || 0;
+                            const pets = parseInt(searchParams.get('pets')) || 0;
+                            const totalGuests = adults + children;
+
+                            const getPriority = (prop) => {
+                                const isAvailable = prop.available !== false;
+                                const matchesGuests = prop.maxGuests >= totalGuests;
+                                const matchesPets = pets === 0 || prop.petsAllowed;
+                                const isMatching = matchesGuests && matchesPets;
+
+                                if (isAvailable && isMatching) return 0;
+                                if (!isAvailable && isMatching) return 1;
+                                return 2;
+                            };
+
+                            return getPriority(a) - getPriority(b);
+                        })
+                        .map(renderPropertyCard)}
                 </div>
 
                 {results.length > 0 && (

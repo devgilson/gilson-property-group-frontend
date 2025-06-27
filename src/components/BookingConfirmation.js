@@ -1,6 +1,9 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import '../styles/BookingConfirmation.css';
+import successIcon from '../assets/confirmation/success.png';
+import googleIcon from '../assets/confirmation/google icon.png';
+import appleIcon from '../assets/confirmation/apple icon.png';
 
 const BookingConfirmation = () => {
   const { state } = useLocation();
@@ -32,14 +35,15 @@ const BookingConfirmation = () => {
         </header>
 
         <main className="main-content">
+          <div className="confirmation-success-icon">
+            <img src={successIcon} alt="Success" />
+          </div>
+
           <h1>You're all set!</h1>
           <p className="booking-id">Booking ID: {bookingData.bookingId}</p>
 
-          {/* New date blocking confirmation */}
           <div className="blocking-confirmation success-message">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-            </svg>
+            <img src={successIcon} alt="Success" className="success-icon" />
             <p>Successfully reserved {bookingData.datesBlocked} nights from {bookingData.checkIn} to {bookingData.checkOut}</p>
           </div>
 
@@ -52,8 +56,14 @@ const BookingConfirmation = () => {
             <p>Need to update your booking? Create an account.</p>
             <div className="auth-options">
               <button className="auth-btn email">Sign up via email</button>
-              <button className="auth-btn google">Sign up with Google</button>
-              <button className="auth-btn apple">Sign in with Apple</button>
+              <button className="auth-btn google">
+                <img src={googleIcon} alt="Google" />
+                Sign up with Google
+              </button>
+              <button className="auth-btn apple">
+                <img src={appleIcon} alt="Apple" />
+                Sign in with Apple
+              </button>
             </div>
           </div>
 
