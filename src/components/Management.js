@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import '../styles/Management.css';
 import propertyManagementImage from '../assets/propertymanagement/property_managment_one.jpg';
 import propertyManagementImage2 from '../assets/propertymanagement/property_management_two.jpg';
+import propertyManagementImage3 from '../assets/propertymanagement/property_management_three.jpg';
+import propertyManagementImage4 from '../assets/propertymanagement/property_management_four.jpg';
+import propertyManagementImage5 from '../assets/propertymanagement/property_management_five.JPG';
+import propertyManagementImage6 from '../assets/propertymanagement/property_management_six.jpg';
 import homeCollectionImage from '../assets/homecollection.png';
 
 const Management = () => {
     const [currentImage, setCurrentImage] = useState(0);
-    const images = [propertyManagementImage ,propertyManagementImage2, homeCollectionImage, homeCollectionImage, homeCollectionImage];
+    const images = [propertyManagementImage ,propertyManagementImage2, propertyManagementImage3, propertyManagementImage4, propertyManagementImage5, propertyManagementImage6, homeCollectionImage];
 
     const handleNext = () => {
         setCurrentImage((prev) => (prev + 1) % images.length);
