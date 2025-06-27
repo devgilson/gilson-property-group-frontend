@@ -151,11 +151,11 @@ const Aboutpage = () => {
                         </div>
                         <div className="about-social-link-item">
                             <span className="icon">✨</span>
-                            <a href="#">Social Media #2</a>
+                            <a href="https://www.tiktok.com/@gilsonpropertyrentals?_t=ZP-8xXbDN8IPvS&_r=1">TikTok</a>
                         </div>
                         <div className="about-social-link-item">
                             <span className="icon">✨</span>
-                            <a href="#">Social Media #3</a>
+                            <a href="https://www.facebook.com/share/1KrJBom6pb/?mibextid=wwXIfr">FaceBook</a>
                         </div>
                     </div>
                 </div>
