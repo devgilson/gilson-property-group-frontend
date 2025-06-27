@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import '../styles/Management.css';
 import propertyManagementImage from '../assets/propertymanagement/property_managment_one.jpg';
-import propertyManagementImage2 from '../assets/propertymanagement/property_managment_two.jpg';
+import propertyManagementImage2 from '../assets/propertymanagement/property_management_two.jpg';
 import homeCollectionImage from '../assets/homecollection.png';
 
 const Management = () => {
