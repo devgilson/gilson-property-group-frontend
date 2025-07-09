@@ -188,7 +188,7 @@ const ReservationFlow = ({ propertyDetails }) => {
       </div>
 
       <div className="step-indicator">
-        Step {currentStep} of 2
+        Step {currentStep} of 3
       </div>
 
       {currentStep === 1 && (
@@ -344,8 +344,11 @@ const ReservationFlow = ({ propertyDetails }) => {
       {currentStep === 3 && (
           <div className="step-content">
             <h2>Payment</h2>
-            <StripeWrapper>
-              <CheckoutForm reservationData={reservationData} />
+            <StripeWrapper reservationData={reservationData}>
+              <CheckoutForm
+                  reservationData={reservationData}
+                  propertyDetails={propertyDetails}
+              />
             </StripeWrapper>
             <div className="button-group">
               <button className="back-btn" onClick={handlePrevious}>Back</button>

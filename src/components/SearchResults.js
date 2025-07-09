@@ -77,7 +77,8 @@ const SearchResults = () => {
             const hasMatchingProperties = results.some(property => {
                 const matchesGuests = property.maxGuests >= totalGuests;
                 const matchesPets = pets === 0 || property.petsAllowed;
-                return matchesGuests && matchesPets;
+                const available = property.available !== false && property.meetsMinStay !== false;
+                return matchesGuests && matchesPets && available;
             });
 
             setShowAdjustAlert(!hasMatchingProperties);
@@ -146,7 +147,8 @@ const SearchResults = () => {
         const matchesGuests = property.maxGuests >= totalGuests;
         const matchesPets = pets === 0 || property.petsAllowed;
         const isMatch = matchesGuests && matchesPets;
-        const isBlocked = property.available === false;
+        const isBelowMinStay = property.meetsMinStay === false;
+        const isBlocked = property.available === false || isBelowMinStay;
 
         return (
             <div
@@ -166,7 +168,12 @@ const SearchResults = () => {
                         }}
                     />
                     {!isMatch && <div className="non-matching-overlay">Doesn't match your criteria</div>}
-                    {isBlocked && <div className="blocked-banner"><span>Not available for selected dates</span></div>}
+                    {isBelowMinStay && (
+                        <div className="blocked-banner"><span>Select more dates (min stay {property.minStay})</span></div>
+                    )}
+                    {property.available === false && (
+                        <div className="blocked-banner"><span>Not available for selected dates</span></div>
+                    )}
                     {property.collection && <span className="collection-badge">{property.collection}</span>}
                 </div>
 
@@ -257,7 +264,7 @@ const SearchResults = () => {
                             const totalGuests = adults + children;
 
                             const getPriority = (prop) => {
-                                const isAvailable = prop.available !== false;
+                                const isAvailable = prop.available !== false && prop.meetsMinStay !== false;
                                 const matchesGuests = prop.maxGuests >= totalGuests;
                                 const matchesPets = pets === 0 || prop.petsAllowed;
                                 const isMatching = matchesGuests && matchesPets;

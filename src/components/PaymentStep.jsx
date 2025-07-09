@@ -1,96 +1,95 @@
 import React, { useEffect, useState } from 'react';
-import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+import {
+    Elements,
+    useStripe,
+    useElements,
+    PaymentElement,
+} from '@stripe/react-stripe-js';
 import axios from 'axios';
-import '../styles/PaymentStep.css';
 
-const PaymentStep = ({ reservationData, onPaymentSuccess, onBack }) => {
+const stripePromise = loadStripe('/api/stripe/publishable-key'); // This endpoint must return the publishable key
+
+const CheckoutForm = ({ confirmationCode }) => {
     const stripe = useStripe();
     const elements = useElements();
-
-    const [clientSecret, setClientSecret] = useState('');
-    const [processing, setProcessing] = useState(false);
-    const [error, setError] = useState(null);
-
-    const totalAmount =
-        reservationData.basePrice +
-        reservationData.taxes +
-        reservationData.fees +
-        reservationData.addOns.reduce((sum, a) => sum + a.price, 0);
-
-    useEffect(() => {
-        const fetchClientSecret = async () => {
-            try {
-                const response = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/api/stripe/create-payment-intent`, {
-                    amount: totalAmount * 100,
-                    confirmationCode: `TEMP-${Date.now()}`,
-                });
-                setClientSecret(response.data.clientSecret);
-            } catch (err) {
-                console.error('Failed to create payment intent', err);
-                setError('Failed to initialize payment. Please try again.');
-            }
-        };
-
-        fetchClientSecret();
-    }, [totalAmount]);
+    const [message, setMessage] = useState(null);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setProcessing(true);
-        setError(null);
 
-        if (!stripe || !elements) {
-            setError('Stripe is not ready');
-            setProcessing(false);
-            return;
-        }
+        if (!stripe || !elements) return;
 
-        const cardElement = elements.getElement(CardElement);
+        setIsProcessing(true);
 
-        const result = await stripe.confirmCardPayment(clientSecret, {
-            payment_method: {
-                card: cardElement,
-                billing_details: {
-                    name: `${reservationData.firstName} ${reservationData.lastName}`,
-                    email: reservationData.email,
-                },
+        const { error } = await stripe.confirmPayment({
+            elements,
+            confirmParams: {
+                return_url: `${window.location.origin}/payment-success`,
             },
         });
 
-        if (result.error) {
-            setError(result.error.message);
-            setProcessing(false);
+        if (error) {
+            setMessage(error.message);
         } else {
-            if (result.paymentIntent.status === 'succeeded') {
-                onPaymentSuccess();
-            } else {
-                setError('Payment did not succeed. Please try again.');
-            }
-            setProcessing(false);
+            setMessage('Payment succeeded!');
         }
+
+        setIsProcessing(false);
     };
 
     return (
-        <div className="payment-step">
-            <h2>Step 3: Payment</h2>
+        <form onSubmit={handleSubmit}>
+            <PaymentElement />
+            <button
+                type="submit"
+                disabled={isProcessing || !stripe || !elements}
+                style={{ marginTop: '20px' }}
+            >
+                {isProcessing ? 'Processing…' : 'Pay now'}
+            </button>
+            {message && <div style={{ marginTop: '10px', color: 'red' }}>{message}</div>}
+        </form>
+    );
+};
 
-            <div className="summary-box">
-                <p>Total Amount: <strong>${totalAmount.toFixed(2)}</strong></p>
-            </div>
+const PaymentStep = ({ confirmationCode, amount }) => {
+    const [clientSecret, setClientSecret] = useState(null);
 
-            <form onSubmit={handleSubmit} className="payment-form">
-                <label htmlFor="card-element">Enter your card information:</label>
-                <CardElement id="card-element" options={{ hidePostalCode: true }} />
+    useEffect(() => {
+        axios
+            .post('/api/stripe/create-payment-intent', {
+                amount: amount, // amount in smallest currency unit (e.g., cents)
+                currency: 'usd',
+                confirmation_code: confirmationCode,
+            })
+            .then((res) => {
+                setClientSecret(res.data.clientSecret);
+            })
+            .catch((err) => {
+                console.error('Error creating PaymentIntent:', err);
+            });
+    }, [confirmationCode, amount]);
 
-                {error && <p className="payment-error">{error}</p>}
+    const appearance = {
+        theme: 'stripe',
+    };
 
-                <div className="payment-actions">
-                    <button type="button" className="back-btn" onClick={onBack} disabled={processing}>Back</button>
-                    <button type="submit" className="pay-btn" disabled={!stripe || processing}>
-                        {processing ? 'Processing...' : 'Pay Now'}
-                    </button>
-                </div>
-            </form>
+    const options = {
+        clientSecret,
+        appearance,
+    };
+
+    return (
+        <div>
+            {clientSecret ? (
+                <Elements stripe={stripePromise} options={options}>
+                    <CheckoutForm confirmationCode={confirmationCode} />
+                </Elements>
+            ) : (
+                <div>Loading payment form...</div>
+            )}
         </div>
     );
 };

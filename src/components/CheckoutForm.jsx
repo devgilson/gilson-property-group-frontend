@@ -1,17 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
+import {
+    useStripe,
+    useElements,
+    PaymentElement,
+    PaymentRequestButtonElement,
+} from '@stripe/react-stripe-js';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { blockDates } from '../services/api';
 import '../styles/CheckoutForm.css';
 
-const CheckoutForm = ({ reservationData }) => {
+const CheckoutForm = ({ reservationData, propertyDetails }) => {
     const stripe = useStripe();
     const elements = useElements();
     const navigate = useNavigate();
 
-    const [clientSecret, setClientSecret] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [paymentRequest, setPaymentRequest] = useState(null);
 
     const totalAmount =
         reservationData.basePrice +
@@ -20,20 +25,24 @@ const CheckoutForm = ({ reservationData }) => {
         reservationData.addOns.reduce((sum, addOn) => sum + addOn.price, 0);
 
     useEffect(() => {
-        const createPaymentIntent = async () => {
-            try {
-                const response = await axios.post(`${process.env.REACT_APP_API_BASE_URL}/stripe/create-payment-intent`, {
-                    amount: Math.round(totalAmount * 100), // in cents
-                    confirmationCode: `TEMP-${Date.now()}`
-                });
-                setClientSecret(response.data.clientSecret);
-            } catch (err) {
-                setError('Failed to initialize payment.');
-            }
-        };
+        if (stripe) {
+            const pr = stripe.paymentRequest({
+                country: 'US',
+                currency: 'usd',
+                total: {
+                    label: 'Total',
+                    amount: Math.round(totalAmount * 100),
+                },
+                requestPayerName: true,
+                requestPayerEmail: true,
+            });
 
-        createPaymentIntent();
-    }, []);
+            pr.canMakePayment().then((result) => {
+                if (result) setPaymentRequest(pr);
+            });
+        }
+    }, [stripe, totalAmount]);
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -43,38 +52,70 @@ const CheckoutForm = ({ reservationData }) => {
         setLoading(true);
         setError(null);
 
-        const result = await stripe.confirmCardPayment(clientSecret, {
-            payment_method: {
-                card: elements.getElement(CardElement),
-                billing_details: {
-                    name: `${reservationData.firstName} ${reservationData.lastName}`,
-                    email: reservationData.email
-                }
-            }
+        const { error, paymentIntent } = await stripe.confirmPayment({
+            elements,
+            confirmParams: {
+                return_url: `${window.location.origin}/booking-confirmation`,
+            },
+            redirect: 'if_required',
+
         });
 
-        if (result.error) {
-            setError(result.error.message);
+        if (error) {
+            setError(error.message);
             setLoading(false);
-        } else if (result.paymentIntent.status === 'succeeded') {
+        } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+            try {
+                const start = new Date(reservationData.checkIn);
+                const end = new Date(reservationData.checkOut);
+                const dates = [];
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    dates.push(d.toISOString().split('T')[0]);
+                }
+
+                const duration = Math.ceil(
+                    (end - start) / (1000 * 60 * 60 * 24)
+                );
+                const pricePerNight = reservationData.basePrice / duration;
+                const minStay =
+                    propertyDetails?.quoteData?.financials?.min_stay || 1;
+
+                await blockDates(
+                    reservationData.propertyId,
+                    dates,
+                    'RESERVATION',
+                    pricePerNight,
+                    minStay
+                );
+            } catch (err) {
+                console.error('Failed to block dates:', err);
+            }
+            setLoading(false);
             navigate('/booking-confirmation', {
                 state: {
                     bookingData: {
                         ...reservationData,
-                        bookingId: result.paymentIntent.id,
+                        bookingId: paymentIntent.id,
                         totalAmount,
-                        status: 'paid'
-                    }
-                }
+                        status: 'paid',
+                    },
+                },
             });
+        } else {
+            setLoading(false);
         }
     };
 
     return (
         <div className="checkout-form">
             <form onSubmit={handleSubmit}>
-                <label>Enter Card Details</label>
-                <CardElement options={{ style: { base: { fontSize: '16px' } } }} />
+                {paymentRequest && (
+                    <PaymentRequestButtonElement
+                        options={{ paymentRequest }}
+                        className="pr-button"
+                    />
+                )}
+                <PaymentElement />
 
                 {error && <div className="error-message">{error}</div>}
 

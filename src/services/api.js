@@ -334,11 +334,17 @@ export async function cancelBooking(bookingId, token) {
 
 export async function blockDates(propertyId, dateStrings, reason = 'RESERVATION', price, minStay) {
     try {
+        const token = localStorage.getItem('token');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
         const response = await fetch(`${API_BASE_URL}/calendar/block-dates?propertyId=${propertyId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers,
             body: JSON.stringify({
                 dates: dateStrings,
                 reason,
