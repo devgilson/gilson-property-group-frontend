@@ -600,14 +600,14 @@ const PropertyDetails = () => {
                                 </div>
                                 <div className="review-text">{review.reviewText}</div>
 
-                                <div className="detailed-ratings">
-                                    {review.detailedRatings.map((rating) => (
-                                        <div key={rating.type} className="rating-item">
-                                            <span className="rating-type">{rating.type}:</span>
-                                            <StarRating rating={rating.rating} small />
-                                        </div>
-                                    ))}
-                                </div>
+                                {/*<div className="detailed-ratings">*/}
+                                {/*    {review.detailedRatings.map((rating) => (*/}
+                                {/*        <div key={rating.type} className="rating-item">*/}
+                                {/*            <span className="rating-type">{rating.type}:</span>*/}
+                                {/*            <StarRating rating={rating.rating} small />*/}
+                                {/*        </div>*/}
+                                {/*    ))}*/}
+                                {/*</div>*/}
                             </div>
                         ))}
                     </div>
