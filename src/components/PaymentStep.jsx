@@ -7,6 +7,7 @@ import {
     PaymentElement,
 } from '@stripe/react-stripe-js';
 import axios from 'axios';
+import LoadingSpinner from './LoadingSpinner';
 
 const stripePromise = loadStripe('/api/stripe/publishable-key'); // This endpoint must return the publishable key
 
@@ -88,7 +89,7 @@ const PaymentStep = ({ confirmationCode, amount }) => {
                     <CheckoutForm confirmationCode={confirmationCode} />
                 </Elements>
             ) : (
-                <div>Loading payment form...</div>
+                <LoadingSpinner />
             )}
         </div>
     );

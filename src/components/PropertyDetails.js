@@ -1,8 +1,10 @@
 import React, {useState, useEffect} from 'react';
+import LoadingSpinner from './LoadingSpinner';
 import {useParams, useNavigate, useSearchParams} from 'react-router-dom';
 import filledStar from '../assets/review/filledstar.png';
 import hollowStar from '../assets/review/hollowstar.png';
 import defaultAvatar from '../assets/review/image1.png';
+import QuickQuote from './QuickQuote';
 import '../styles/PropertyDetails.css';
 
 const StarRating = ({rating, small = false}) => {
@@ -47,12 +49,17 @@ const PropertyDetails = () => {
     const [quoteError, setQuoteError] = useState(null);
     const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
 
-    const checkInStr = searchParams.get('checkIn');
-    const checkOutStr = searchParams.get('checkOut');
-    const adults = parseInt(searchParams.get('adults')) || 2;
-    const children = parseInt(searchParams.get('children')) || 0;
-    const infants = parseInt(searchParams.get('infants')) || 0;
-    const pets = parseInt(searchParams.get('pets')) || 0;
+    const initialCheckIn = searchParams.get('checkIn');
+    const initialCheckOut = searchParams.get('checkOut');
+
+    const [checkIn, setCheckIn] = useState(initialCheckIn);
+    const [checkOut, setCheckOut] = useState(initialCheckOut);
+    const [adults, setAdults] = useState(parseInt(searchParams.get('adults')) || 2);
+    const [children, setChildren] = useState(parseInt(searchParams.get('children')) || 0);
+    const [infants, setInfants] = useState(parseInt(searchParams.get('infants')) || 0);
+    const [pets, setPets] = useState(parseInt(searchParams.get('pets')) || 0);
+    const [showQuote, setShowQuote] = useState(false);
+
 
     const formatDisplayDate = (dateStr) => {
         if (!dateStr) return '';
@@ -70,15 +77,15 @@ const PropertyDetails = () => {
     };
 
     const calculateStayDuration = () => {
-        if (!checkInStr || !checkOutStr) return 0;
-        const start = new Date(checkInStr);
-        const end = new Date(checkOutStr);
+        if (!checkIn || !checkOut) return 0;
+        const start = new Date(checkIn);
+        const end = new Date(checkOut);
         const diffTime = Math.abs(end - start);
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
     };
 
     const fetchQuoteData = async () => {
-        if (!checkInStr || !checkOutStr) return;
+        if (!checkIn || !checkOut) return;
 
         try {
             setQuoteLoading(true);
@@ -92,8 +99,8 @@ const PropertyDetails = () => {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        checkin_date: checkInStr,
-                        checkout_date: checkOutStr,
+                        checkin_date: checkIn,
+                        checkout_date: checkOut,
                         guests: {
                             adults: adults,
                             children: children,
@@ -175,7 +182,7 @@ const PropertyDetails = () => {
         };
 
         fetchPropertyData();
-    }, [id, checkInStr, checkOutStr]);
+    }, [id, checkIn, checkOut]);
     const nextImage = () => {
         setImageLoaded(false);
         setCurrentImageIndex(prev => (prev + 1) % imageUrls.length);
@@ -228,8 +235,8 @@ const PropertyDetails = () => {
                 propertyDetails: {
                     id: property.id,
                     name: property.name,
-                    selectedCheckIn: checkInStr,
-                    selectedCheckOut: checkOutStr,
+                    selectedCheckIn: checkIn,
+                    selectedCheckOut: checkOut,
                     selectedRoomType: 'Entire property',
                     basePrice: quoteData?.financials?.totals?.sub_total?.amount ?
                         (quoteData?.financials.totals.sub_total.amount / 100) : 0,
@@ -271,7 +278,7 @@ const PropertyDetails = () => {
     };
 
     const renderPaymentSection = () => {
-        if (!checkInStr || !checkOutStr) {
+        if (!checkIn || !checkOut) {
             return (
                 <div className="payment-section">
                     <div className="payment-header">
@@ -280,11 +287,29 @@ const PropertyDetails = () => {
                     <div className="payment-note">
                         Please choose check-in and check-out dates to view the total price.
                     </div>
+                    <button className="check-price-button" onClick={() => setShowQuote(true)}>
+                        Check Pricing
+                    </button>
+                    {showQuote && (
+                        <QuickQuote
+                            property={property}
+                            onClose={() => setShowQuote(false)}
+                            onSuccess={({ quote, checkIn: ci, checkOut: co, guests }) => {
+                                setQuoteData(quote);
+                                setCheckIn(ci);
+                                setCheckOut(co);
+                                setAdults(guests.adults);
+                                setChildren(guests.children);
+                                setInfants(guests.infants);
+                                setPets(guests.pets);
+                            }}
+                        />
+                    )}
                 </div>
             );
         }
 
-        if (quoteLoading) return <div className="loading">Calculating price...</div>;
+        if (quoteLoading) return <LoadingSpinner />;
         if (quoteError) return <div className="error">Error calculating price: {quoteError}</div>;
         if (!quoteData?.financials) return <div className="error">Price data not available</div>;
 
@@ -307,11 +332,11 @@ const PropertyDetails = () => {
                 <div className="payment-dates">
                     <div className="date-field">
                         <label>Check-in</label>
-                        <div>{formatDisplayDate(checkInStr)}</div>
+                        <div>{formatDisplayDate(checkIn)}</div>
                     </div>
                     <div className="date-field">
                         <label>Check-out</label>
-                        <div>{formatDisplayDate(checkOutStr)}</div>
+                        <div>{formatDisplayDate(checkOut)}</div>
                     </div>
                     <div className="guest-field">
                         <label>Guests</label>
@@ -370,7 +395,7 @@ const PropertyDetails = () => {
         );
     };
 
-    if (loading) return <div className="loading">Loading property details...</div>;
+    if (loading) return <LoadingSpinner />;
     if (error) return <div className="error">Error: {error}</div>;
     if (!property) return <div className="error">Property not found</div>;
 

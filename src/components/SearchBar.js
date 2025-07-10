@@ -41,6 +41,8 @@ const SearchBar = () => {
         bookedDates: []
     });
 
+    const availabilityCache = useRef({});
+
     const availabilityMaps = useMemo(() => ({
         available: new Set(availability.availableDates),
         booked: new Set(availability.bookedDates)
@@ -121,6 +123,11 @@ const SearchBar = () => {
 
         const fetchAvailability = async () => {
             try {
+                const cacheKey = `${selectedLocation || 'all'}_${todayStr}_${endStr}`;
+                if (availabilityCache.current[cacheKey]) {
+                    setAvailability(availabilityCache.current[cacheKey]);
+                    return;
+                }
                 let data;
                 if (selectedLocation === 'CO' || selectedLocation === 'MI') {
                     data = await getAvailabilityByState(selectedLocation, todayStr, endStr);
@@ -131,10 +138,12 @@ const SearchBar = () => {
                     data = { availableDates: [], bookedDates: all.bookedDates || [] };
                 }
 
-                setAvailability({
+                const normalized = {
                     availableDates: data.availableDates || [],
                     bookedDates: data.bookedDates || []
-                });
+                };
+                availabilityCache.current[cacheKey] = normalized;
+                setAvailability(normalized);
             } catch {
                 setAvailability({ availableDates: [], bookedDates: [] });
             } finally {
@@ -170,12 +179,17 @@ const SearchBar = () => {
         return days;
     }, []);
 
+    const isDateAvailable = useCallback((d) => {
+        const str = d.toISOString().split('T')[0];
+        if (selectedLocation) {
+            return availabilityMaps.available.has(str) && !availabilityMaps.booked.has(str);
+        }
+        return !availabilityMaps.booked.has(str);
+    }, [availabilityMaps, selectedLocation]);
+
     const handleDateClick = useCallback((date, e) => {
         e.stopPropagation();
-        const isDisabled = date < today || (selectedLocation &&
-            (availabilityMaps.booked.has(date.toISOString().split('T')[0]) ||
-                !availabilityMaps.available.has(date.toISOString().split('T')[0])));
-        if (isDisabled) return;
+        if (date < today || !isDateAvailable(date)) return;
 
         setSelectedDates((prev) => {
             if (prev.checkIn?.toDateString() === date.toDateString() && !prev.checkOut) {
@@ -191,7 +205,7 @@ const SearchBar = () => {
                 let valid = true;
                 while (temp < date) {
                     const str = temp.toISOString().split('T')[0];
-                    if (!availabilityMaps.available.has(str)) {
+                    if (!isDateAvailable(temp)) {
                         valid = false;
                         break;
                     }
@@ -224,10 +238,8 @@ const SearchBar = () => {
                 </div>
                 <div className="calendar-days">
                     {days.map((day, i) => {
-                        const dateStr = day.toISOString().split('T')[0];
                         const disabled = day < today || (day.getMonth() !== month);
-                        const booked = availabilityMaps.booked.has(dateStr);
-                        const available = !booked;
+                        const available = isDateAvailable(day);
                         const inRange = isInRange(day);
 
                         return (

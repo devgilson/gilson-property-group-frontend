@@ -1,7 +1,5 @@
-// Full corrected SearchBar.js code received from user is acknowledged.
-// You may paste this full updated version into the project manually, or let me know if you'd like me to reapply this cleanly to the current working document with dropdown logic, all calendar/guest logic preserved, and layout aligned with Figma.
-
 import React, { useState, useEffect } from 'react';
+import LoadingSpinner from './LoadingSpinner';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../styles/SearchResults.css';
 
@@ -206,6 +204,18 @@ const SearchResults = () => {
             </div>
         );
     };
+
+    if (loading) {
+        return (
+            <div className="loading-state">
+                <LoadingSpinner />
+            </div>
+        );
+    }
+
+    if (error) {
+        return <div className="error-state">Error: {error}</div>;
+    }
 
     return (
         <div className="search-results-container">

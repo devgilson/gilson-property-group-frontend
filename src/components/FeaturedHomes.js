@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/FeaturedHomes.css';
+import LoadingSpinner from './LoadingSpinner';
 
 const FeaturedHomes = () => {
     const [activeTab, setActiveTab] = useState('All');
@@ -64,7 +65,7 @@ const FeaturedHomes = () => {
             <div className="divider"></div>
 
             {loading ? (
-                <div className="loading-spinner">Loading...</div>
+                <LoadingSpinner />
             ) : properties.length === 0 ? (
                 <p>No featured properties found for this category.</p>
             ) : (
@@ -95,7 +96,7 @@ const FeaturedHomes = () => {
                                             ? property.description.slice(0, 220) + '...'
                                             : 'No description available.'}
                                     </p>
-                                    <span style={{ marginTop: 'auto', textAlign: 'right', display: 'block' }}>→</span>
+                                    <span style={{marginTop: 'auto', textAlign: 'right', display: 'block'}}>→</span>
                                 </div>
                             </div>
                         ))}

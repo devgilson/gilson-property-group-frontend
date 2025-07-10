@@ -8,6 +8,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { blockDates } from '../services/api';
 import '../styles/CheckoutForm.css';
+import LoadingSpinner from './LoadingSpinner';
 
 const CheckoutForm = ({ reservationData, propertyDetails }) => {
     const stripe = useStripe();
@@ -108,6 +109,7 @@ const CheckoutForm = ({ reservationData, propertyDetails }) => {
 
     return (
         <div className="checkout-form">
+            {loading && <LoadingSpinner />}
             <form onSubmit={handleSubmit}>
                 {paymentRequest && (
                     <PaymentRequestButtonElement
