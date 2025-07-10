@@ -23,6 +23,7 @@ import './styles/common-styles.css';
 import ReservationPage from './components/ReservationPage';
 import BookingConfirmation from './components/BookingConfirmation';
 import PaymentPage from "./components/PaymentPage";
+import ZohoChatbot from './components/ZohoChatbot';
 
 class ErrorBoundary extends React.Component {
     constructor(props) {
@@ -75,6 +76,7 @@ function App() {
                         <Route path="/management" element={<Management />} />
                     </Routes>
                     <Footer />
+                    <ZohoChatbot />
                 </AuthProvider>
             </Router>
         </ErrorBoundary>
